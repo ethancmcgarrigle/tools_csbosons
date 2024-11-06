@@ -6,8 +6,36 @@ def coth(x):
   return np.cosh(x)/np.sinh(x)
 
 
+def csch(x):
+  return 1./np.sinh(x)
 
-## Non-interacting reference 
+
+
+
+
+## non-interacting classical reference 
+def Mz_classical(beta, hz, S):
+    if(hz == 0.):
+      return 0. 
+    else:
+      return S * (2. * coth(2. * beta * hz * S) - (1./(hz*beta*S))) 
+
+
+def chi_zz_classical(beta, hz, S):
+    tmp = -2. * beta * (S**2) * (csch(2. * beta * hz * S)**2)  
+    return 2.*(tmp + 1./(2. * beta * (hz**2)))
+
+def Cv_classical(beta, hz, S):
+    if(hz == 0):
+      return 0.
+    else:
+      return 1. - (((2. * beta * hz * S)**2) / (np.sinh(2. * beta * hz * S)**2))
+
+
+
+
+
+## Non-interacting quantum reference 
 def Mz(beta, hz, S):
     if(int(S) == S): # integer spin
       m_i = np.arange(2, int(np.round(2*S, 3)) + 2, 2)
@@ -152,6 +180,7 @@ _hz = params['system']['hz']
 ndim = params['system']['Dim']
 assert ndim == 1 , 'We are not in 1D. The reference expects 1D'
 Nx = params['system']['NSitesPer-x']
+ntau = params['system']['ntau']
 
 beta_eff = _S * (_S + 1.) * _beta
 
@@ -163,10 +192,18 @@ print()
 ## Calc references 
 if(_J == 0):
   print('J is zero so spins are non-interacting, using the non-interacting reference: \n')
-  Mag_z = Mz(_beta, _hz, _S)
-  U_ = U(Mag_z, _hz)
-  chi_zz = _beta * (Mz_squared(_beta, _hz, _S) - Mag_z**2)
-  Cv = _beta * _beta * (U_squared(_beta, _hz, _S) - U_**2)
+  if(ntau == 1):
+    print('Using classical reference')
+    Mag_z = Mz_classical(_beta, _hz, _S)
+    U_ = -Mag_z * _hz 
+    chi_zz = chi_zz_classical(_beta, _hz, _S)
+    Cv = Cv_classical(_beta, _hz, _S)
+  else:
+    print('Using quantum reference')
+    Mag_z = Mz(_beta, _hz, _S)
+    U_ = U(Mag_z, _hz)
+    chi_zz = _beta * (Mz_squared(_beta, _hz, _S) - Mag_z**2)
+    Cv = _beta * _beta * (U_squared(_beta, _hz, _S) - U_**2)
 else:
   print('J is non-zero so spins are interacting, using the interacting Ising reference: \n')
   Mag_z = Mz_Ising(_beta, _S, _J, _hz)
