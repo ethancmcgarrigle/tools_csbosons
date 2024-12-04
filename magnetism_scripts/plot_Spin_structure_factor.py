@@ -16,6 +16,8 @@ from scipy.stats import sem
 from matplotlib.colors import LogNorm
 
 
+# TODO Generalize to 1D and 3D 
+
 def calculate_field_average(field_data, N_spatial, averaging_pcnt): 
     # Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
     # field_data is data of N_samples * len(Nx**d), for d-dimensions. Can be complex data
@@ -106,23 +108,29 @@ def process_data(spin_file, N_gridpoints, dim, _Langevin):
       ky = np.zeros_like(kx)
       kz = np.zeros_like(kx)
 
+    kx, ky, kz, Sk_avg, Sk_errs = extend_orthorhombic_grid(kx, ky, kz, Sk_avg, Sk_errs)
+
     processed_data = {'kx': kx, 'ky': ky, 'kz': kz, 'S(k)': Sk_avg, 'S(k)_errs': Sk_errs} 
 
     d_frame_Sk = pd.DataFrame.from_dict(processed_data)
 
     if(lattice == 'square'): # process for later usage of imshow()
-      d_frame_Sk.sort_values(by=['kx', 'ky'], ascending = True, inplace=True)
+      d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
       # Redefine numpy array post sorting
       Sk_processed = np.array(d_frame_Sk['S(k)']) 
-      Sk_processed.resize(Nx, Ny)
+      augmentation_factor = int(np.sqrt(int(len(kx) / (Nx * Ny * Nz))))
+      Sk_processed.resize(Nx * augmentation_factor, Ny * augmentation_factor)
+      #Sk_processed.resize(Nx, Ny)
       Sk_processed = np.transpose(Sk_processed)
       Sk_processed = np.flip(Sk_processed, 0)
     else:
+      d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
       Sk_processed = np.array(d_frame_Sk['S(k)']) 
 
-
     return [np.array(d_frame_Sk['kx']), np.array(d_frame_Sk['ky']), np.array(d_frame_Sk['kz']), Sk_processed]
-  
+ 
+
+ 
 def Rotation_matrix(in_vec, theta):
     ''' Return the vector rotated by theta [degrees]'''    
     # Convert to radians 
@@ -179,78 +187,112 @@ def global_rotation(kx, ky, theta):
 
 
 
-def global_translation(kx, ky, Q):
+def global_translation(k_list, Q):
     ''' Function that performs a global translation of the k grid by Q, a reciprocol lattice vector''' 
+    ''' In-place modification of k_list = [kx, ky, kz] input grid '''
     # Loop through all points and translate 
-    for q in range(0, len(kx)):
-      kx[q], ky[q] = np.array([kx[q] + Q[0], ky[q] + Q[1]])
+    for q in range(0, len(k_list[0])):
+      k_list[0][q], k_list[1][q], k_list[2][q] = np.array([k_list[0][q] + Q[0], k_list[1][q] + Q[1], k_list[2][q] + Q[2]])
 
 
 
-def extend_plot(kx, ky, Sk, linear_scale = True):
-    ''' In-place function that is entended to use in a figure environment. 
-        - Extends the plot by performing various reciprocol lattice vector translations  
-        - Extends the plot by performing various 120-degree rotations, for each reciprocal lattice vector
-        - Takes in a bool (default to True) to show intensity values on a linear scale (False for log scale)
-        - ASSUMES TRIANGULAR LATTICE (120-degree symmetry) ''' 
-       
- #    for i in range(0, 2):
- #      #global_rotation(kx, ky, 120)
+def extend_orthorhombic_grid(kx, ky, kz, Sk, Sk_errs):
+    ''' Function to extend the reciprocal space grid to \pm b1, b2, b3, b4. Returns the arrays having been augmented 
+        Plan: 
+           1. Append the (k) data with translated grid 
+           2. Append the corresponding Sk data to the original Sk data set    
+           3. Sort in a data frame later
+    '''  
+    kx_original = np.copy(kx)
+    ky_original = np.copy(ky) 
+    kz_original = np.copy(kz) 
+    Sk_original = np.copy(Sk)
+    Sk_errs_original = np.copy(Sk)
+
+    for Q in [b1, b2, b3, b4, -b1, -b2, -b3, -b4]: 
+      k_translate = [np.copy(kx_original), np.copy(ky_original), np.copy(kz_original)]
+      global_translation(k_translate, Q)
+      kx, ky, kz = np.append(kx, k_translate[0]) , np.append(ky, k_translate[1]), np.append(kz, k_translate[2]) 
+      Sk = np.append(Sk, Sk_original)
+      Sk_errs = np.append(Sk_errs, Sk_errs_original)
+
+    return kx, ky, kz, Sk, Sk_errs
+
+
+ #def extend_plot(kx, ky, kz, Sk, linear_scale = True):
+ #    ''' Depricated! soon to be deleted'''
+ #    ''' In-place function that is entended to use in a figure environment. 
+ #        - Extends the plot by performing various reciprocol lattice vector translations  
+ #        - Takes in a bool (default to True) to show intensity values on a linear scale (False for log scale)
+ #        - ASSUMES TRIANGULAR LATTICE (120-degree symmetry) ''' 
+ #       
+ # #    for i in range(0, 2):
+ # #      #global_rotation(kx, ky, 120)
+ # #      triangles = tri.Triangulation(kx, ky)
+ # #      if(linear_scale):
+ # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #      else:
+ # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #    
+ #    #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #    # 2. Plot translations (and rotations for each translation) 
+ #    for Q in [b1, b2, b3]:
+ #      global_translation([kx, ky, kz], Q)
  #      triangles = tri.Triangulation(kx, ky)
  #      if(linear_scale):
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
  #      else:
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
-    
-    #global_rotation(kx, ky, 120) # to return back to original grid 
-  
-    # 2. Plot translations (and rotations for each translation) 
-    for Q in [b1, b2, b3]:
-      global_translation(kx, ky, Q)
-      triangles = tri.Triangulation(kx, ky)
-      if(linear_scale):
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
-      else:
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
-
- #      for i in range(0, 2):
- #        #global_rotation(kx, ky, 120)
- #        triangles = tri.Triangulation(kx, ky)
- #        if(linear_scale):
- #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- #        else:
- #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
-    
-      #global_rotation(kx, ky, 120) # to return back to original grid 
-  
-      global_translation(kx, ky, -2*Q) # return grid back to original 
-  
-      triangles = tri.Triangulation(kx, ky)
-      if(linear_scale):
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
-      else:
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
- #      for i in range(0, 2):
- #        #global_rotation(kx, ky, 120)
- #        triangles = tri.Triangulation(kx, ky)
- #        if(linear_scale):
- #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- #        else:
- #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
-      #global_rotation(kx, ky, 120) # to return back to original grid 
-  
-      global_translation(kx, ky, Q) # return grid back to original 
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
+ #
+ # #      for i in range(0, 2):
+ # #        #global_rotation(kx, ky, 120)
+ # #        triangles = tri.Triangulation(kx, ky)
+ # #        if(linear_scale):
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #        else:
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #    
+ #      #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #      global_translation([kx, ky, kz], -2*Q) # return grid back to original 
+ #  
+ #      triangles = tri.Triangulation(kx, ky)
+ #      if(linear_scale):
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
+ #      else:
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
+ # #      for i in range(0, 2):
+ # #        #global_rotation(kx, ky, 120)
+ # #        triangles = tri.Triangulation(kx, ky)
+ # #        if(linear_scale):
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #        else:
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #      #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #      global_translation([kx, ky, kz], Q) # return grid back to original 
 
 
 
-def plot_BZ1(BZ1_dict):
+def plot_BZ1(BZ1_dict = {}):
   ''' Function to plot an outline of the first brillouin zone '''
-  for i, pts in enumerate(BZ1_dict['K_points']):
-     plt.plot( np.array([BZ1_dict['K_prime_points'][i][0], BZ1_dict['K_points'][i][0]]), np.array([BZ1_dict['K_prime_points'][i][1], BZ1_dict['K_points'][i][1] ]), linestyle = 'solid', color = 'red', linewidth = 0.5)
-     ip1 = (i + 1 ) % 3 
-     plt.plot( np.array([BZ1_dict['K_points'][i][0], BZ1_dict['K_prime_points'][ip1][0]]), np.array([BZ1_dict['K_points'][i][1], BZ1_dict['K_prime_points'][ip1][1] ]), linestyle = 'solid', color = 'red', linewidth = 0.5)
-
-
+  ''' For triangular lattice, we expect a dictionary input specifying the high symmetry points ''' 
+  ''' This function is expected to be plot in a matplotlib environment ''' 
+  if(lattice == 'square'):
+    # plot a 2D square for the first BZ 
+    pts_x = np.array([-np.pi, -np.pi, np.pi, np.pi])
+    pts_y = np.array([-np.pi, np.pi, np.pi, -np.pi])
+    for i, pts in enumerate(pts_x):
+      ip1 = (i + 1 ) % 4 
+      plt.plot( np.array([pts_x[i], pts_x[ip1]]), np.array([pts_y[i], pts_y[ip1]]), linestyle = 'solid', color = 'white', linewidth = 0.5)
+  else:
+    # plot the 2D hexagon for the first BZ 
+    for i, pts in enumerate(BZ1_dict['K_points']):
+       plt.plot( np.array([BZ1_dict['K_prime_points'][i][0], BZ1_dict['K_points'][i][0]]), np.array([BZ1_dict['K_prime_points'][i][1], BZ1_dict['K_points'][i][1] ]), linestyle = 'solid', color = 'white', linewidth = 0.5)
+       ip1 = (i + 1 ) % 3 
+       plt.plot( np.array([BZ1_dict['K_points'][i][0], BZ1_dict['K_prime_points'][ip1][0]]), np.array([BZ1_dict['K_points'][i][1], BZ1_dict['K_prime_points'][ip1][1] ]), linestyle = 'solid', color = 'white', linewidth = 0.5)
+  
 
 
 
@@ -261,7 +303,7 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
         - e.g. Sk_list[1] is the list: [kx, ky, kz, Sk_yy] '''
     plt.style.use('~/tools_csbosons/python_plot_styles/plot_style_spins.txt')
 
-    if(ntau > 1):
+    if(ntau > 1 or lattice == 'triangular'):
       _LogPlots = False
     else:
       _LogPlots = True
@@ -274,25 +316,37 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
 
       file_str = 'Sk_' + dirs[nu] + dirs[nu] + '_' + str(basis_site_indx) 
 
+      extension_factor = 1.5   # for 1st BZ
+
+
       plt.figure(figsize=(6.77166, 6.77166))
       if(lattice == 'square'):
+        #plot_BZ_square()
+        plot_BZ1()
+        #plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
         plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
+        BZ1_end = np.pi 
+        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
       else:
         # Need to reconstruct the 1st-BZ for visualization 
         BZ1_dict = return_BZ1_points()
         # Distance from origin to any of the hexagon's vertices  
         K_prime_distance = np.linalg.norm(b1)*0.5 / np.cos(np.pi / 6.)
         BZ1_end = K_prime_distance
-        extension_factor = 1.25
         # Plot the hexagon depicting the first Brillouin Zone 
         plot_BZ1(BZ1_dict)
-        # Need to populate the entire first BZ. The easiest way to do this is to perform various grid shifts (rotataions, translations) and overlay them    
+        # Plot the structure factor 
         triangles = tri.Triangulation(kx, ky)
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
-        extend_plot(kx, ky, Sk, True)
+        #plt.triplot(triangles, zorder = 2)
+        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 200, zorder=1) 
+        #plt.plot([0.], [0.], color='red', marker = 'o') 
+
+        #extend_plot(kx, ky, kz, Sk, True)
+
         # Plot the domain (kx, ky) \in [-1.25BZ, 1.25BZ]
-        #plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        #plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         #plt.scatter(kx, ky, Sk.real)
 
       if(basis_sites > 1):
@@ -321,6 +375,9 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
   
         if(lattice == 'square'):
           plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
+          BZ1_end = np.pi 
+          plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+          plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         else:
           # Need to reconstruct the 1st-BZ for visualization 
           BZ1_dict = return_BZ1_points()
@@ -328,7 +385,9 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
           plot_BZ1(BZ1_dict)
           triangles = tri.Triangulation(kx, ky)
           plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
-          extend_plot(kx, ky, Sk, False)
+          #extend_plot(kx, ky, kz, Sk, False)
+        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         plt.xlabel('$k_{x}$', fontsize = 32)
         plt.ylabel('$k_{y}$', fontsize = 32)
         # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
@@ -384,7 +443,23 @@ if __name__ == "__main__":
   else:
     num_basis_sites = 1
     basis_site_labels = {0: 'A'}
-  
+
+  # Define global lattice vectors:
+  if(lattice == 'triangular'):
+    b1 = np.array([1, -1./np.sqrt(3.), 0.]) 
+    b1 *= (2. * np.pi) 
+    b2 = np.array([0, 2. / np.sqrt(3.), 0.])
+    b2 *= (2. * np.pi)
+    b3 = b1 + b2
+    b4 = b1 - b2
+  else:
+    b1 = np.array([1., 0., 0.])
+    b1 *= (2. * np.pi) 
+    b2 = np.array([0., 1., 0.])
+    b2 *= (2. * np.pi)
+    b3 = b1 + b2
+    b4 = b1 - b2
+
   Sk_list = [] # list of length sublattice basis sites (2 for honeycomb) 
   # Main loop to process the correlation data for each sublattice and each spin
   for K in range(0, num_basis_sites):
@@ -395,22 +470,6 @@ if __name__ == "__main__":
       Sk_alpha.append(process_data(S_file, N_spatial, dim, _CL))
     Sk_list.append(Sk_alpha)
 
-  
-  # Define global lattice vectors:
-  if(lattice == 'triangular'):
-    b1 = np.array([1, -1./np.sqrt(3.)]) 
-    b1 *= (2. * np.pi) 
-    b2 = np.array([0, 2. / np.sqrt(3.)])
-    b2 *= (2. * np.pi)
-    b3 = b1 + b2
-  else:
-    b1 = np.array([1., 0])
-    b1 *= (2. * np.pi) 
-    b2 = np.array([0, 1.])
-    b2 *= (2. * np.pi)
-    b3 = b1 + b2
-
-  
   for K in range(0, num_basis_sites):
     plot_structure_factor(Sk_list[K], False, False, K, num_basis_sites) 
   
