@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-#matplotlib.rcParams['text.usetex'] = True
-matplotlib.use('TkAgg')
+matplotlib.rcParams['text.usetex'] = True
+#matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
@@ -36,7 +36,7 @@ def calculate_field_average(field_data, N_spatial, averaging_pcnt):
     print('Averaging over ' + str(N_samples_to_avg) + ' samples') 
 
     # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex_)
+    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
     averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
     # Calculate the standard error 
     std_errs = np.zeros(len(sample_arrays[0]))
@@ -218,60 +218,6 @@ def extend_orthorhombic_grid(kx, ky, kz, Sk, Sk_errs):
 
     return kx, ky, kz, Sk, Sk_errs
 
-
- #def extend_plot(kx, ky, kz, Sk, linear_scale = True):
- #    ''' Depricated! soon to be deleted'''
- #    ''' In-place function that is entended to use in a figure environment. 
- #        - Extends the plot by performing various reciprocol lattice vector translations  
- #        - Takes in a bool (default to True) to show intensity values on a linear scale (False for log scale)
- #        - ASSUMES TRIANGULAR LATTICE (120-degree symmetry) ''' 
- #       
- # #    for i in range(0, 2):
- # #      #global_rotation(kx, ky, 120)
- # #      triangles = tri.Triangulation(kx, ky)
- # #      if(linear_scale):
- # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #      else:
- # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #    
- #    #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #    # 2. Plot translations (and rotations for each translation) 
- #    for Q in [b1, b2, b3]:
- #      global_translation([kx, ky, kz], Q)
- #      triangles = tri.Triangulation(kx, ky)
- #      if(linear_scale):
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
- #      else:
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
- #
- # #      for i in range(0, 2):
- # #        #global_rotation(kx, ky, 120)
- # #        triangles = tri.Triangulation(kx, ky)
- # #        if(linear_scale):
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #        else:
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #    
- #      #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #      global_translation([kx, ky, kz], -2*Q) # return grid back to original 
- #  
- #      triangles = tri.Triangulation(kx, ky)
- #      if(linear_scale):
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
- #      else:
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
- # #      for i in range(0, 2):
- # #        #global_rotation(kx, ky, 120)
- # #        triangles = tri.Triangulation(kx, ky)
- # #        if(linear_scale):
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #        else:
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #      #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #      global_translation([kx, ky, kz], Q) # return grid back to original 
 
 
 
