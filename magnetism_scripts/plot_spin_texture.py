@@ -5,8 +5,8 @@ import os
 import subprocess 
 import re
 import matplotlib.pyplot as plt
-matplotlib.rcParams['text.usetex'] = True
-#matplotlib.use('TkAgg')
+#matplotlib.rcParams['text.usetex'] = True
+matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
@@ -23,12 +23,16 @@ def calculate_field_average(field_data, N_spatial, N_samples_to_avg): # assumes 
     assert(N_samples.is_integer())
     N_samples = int(N_samples)
 
+    if(N_samples == 1):
+      print('1 sample detected. Processing the snapshot instead of averaging')
+      return field_data, np.zeros_like(field_data)
+
     # Use split (np) to get arrays that represent each sample (1 array per sample) Throw out the first sample (not warmed up properly) 
     sample_arrays = np.split(field_data, N_samples) 
     sample_arrays = sample_arrays[len(sample_arrays) - N_samples_to_avg:len(sample_arrays)]
 
     # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
+    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex_)
     averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
     # Calculate the standard error 
     std_errs = np.zeros(len(sample_arrays[0]))
@@ -67,9 +71,9 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   
   N_samples = int(len(S_x_real)/(N_spatial))
   
-  Sx_vector = np.zeros(len(x), dtype=np.complex128)
-  Sy_vector = np.zeros(len(x), dtype=np.complex128)
-  Sz_vector = np.zeros(len(x), dtype=np.complex128)
+  Sx_vector = np.zeros(len(x), dtype=np.complex_)
+  Sy_vector = np.zeros(len(x), dtype=np.complex_)
+  Sz_vector = np.zeros(len(x), dtype=np.complex_)
   
   # Average the data 
   if(_CL):
@@ -174,7 +178,9 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   
   
     plt.quiver(x, y, Sx_sorted.real/total_norm, Sy_sorted.real/total_norm, Sz_sorted.real/total_norm, units = 'xy', cmap=sns_cmap, pivot = 'middle', zorder = 2) 
-  return [x, y, Sx_sorted.real, Sy_sorted, Sz_sorted]
+  return [x, y, Sx_sorted.real, Sy_sorted.real, Sz_sorted.real]
+
+
 
 
 

@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-matplotlib.rcParams['text.usetex'] = True
-#matplotlib.use('TkAgg')
+#matplotlib.rcParams['text.usetex'] = True
+matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
@@ -28,6 +28,10 @@ def calculate_field_average(field_data, N_spatial, averaging_pcnt):
     assert(N_samples.is_integer())
     N_samples = int(N_samples)
 
+    if(N_samples == 1):
+      print('1 sample detected. Processing the snapshot instead of averaging')
+      return field_data, np.zeros_like(field_data)
+
     # Use split (np) to get arrays that represent each sample (1 array per sample) Throw out the first sample (not warmed up properly) 
     sample_arrays = np.split(field_data, N_samples)
 
@@ -36,7 +40,7 @@ def calculate_field_average(field_data, N_spatial, averaging_pcnt):
     print('Averaging over ' + str(N_samples_to_avg) + ' samples') 
 
     # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
+    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex_)
     averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
     # Calculate the standard error 
     std_errs = np.zeros(len(sample_arrays[0]))
@@ -219,26 +223,86 @@ def extend_orthorhombic_grid(kx, ky, kz, Sk, Sk_errs):
     return kx, ky, kz, Sk, Sk_errs
 
 
+ #def extend_plot(kx, ky, kz, Sk, linear_scale = True):
+ #    ''' Depricated! soon to be deleted'''
+ #    ''' In-place function that is entended to use in a figure environment. 
+ #        - Extends the plot by performing various reciprocol lattice vector translations  
+ #        - Takes in a bool (default to True) to show intensity values on a linear scale (False for log scale)
+ #        - ASSUMES TRIANGULAR LATTICE (120-degree symmetry) ''' 
+ #       
+ # #    for i in range(0, 2):
+ # #      #global_rotation(kx, ky, 120)
+ # #      triangles = tri.Triangulation(kx, ky)
+ # #      if(linear_scale):
+ # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #      else:
+ # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #    
+ #    #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #    # 2. Plot translations (and rotations for each translation) 
+ #    for Q in [b1, b2, b3]:
+ #      global_translation([kx, ky, kz], Q)
+ #      triangles = tri.Triangulation(kx, ky)
+ #      if(linear_scale):
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
+ #      else:
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
+ #
+ # #      for i in range(0, 2):
+ # #        #global_rotation(kx, ky, 120)
+ # #        triangles = tri.Triangulation(kx, ky)
+ # #        if(linear_scale):
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #        else:
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #    
+ #      #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #      global_translation([kx, ky, kz], -2*Q) # return grid back to original 
+ #  
+ #      triangles = tri.Triangulation(kx, ky)
+ #      if(linear_scale):
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
+ #      else:
+ #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
+ # #      for i in range(0, 2):
+ # #        #global_rotation(kx, ky, 120)
+ # #        triangles = tri.Triangulation(kx, ky)
+ # #        if(linear_scale):
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
+ # #        else:
+ # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
+ #      #global_rotation(kx, ky, 120) # to return back to original grid 
+ #  
+ #      global_translation([kx, ky, kz], Q) # return grid back to original 
+
 
 
 def plot_BZ1(BZ1_dict = {}):
   ''' Function to plot an outline of the first brillouin zone '''
-  ''' For triangular lattice, we expect a dictionary input specifying the high symmetry points ''' 
-  ''' This function is expected to be plot in a matplotlib environment ''' 
   if(lattice == 'square'):
-    # plot a 2D square for the first BZ 
+    # plot a 2D square for the BZ 
     pts_x = np.array([-np.pi, -np.pi, np.pi, np.pi])
     pts_y = np.array([-np.pi, np.pi, np.pi, -np.pi])
     for i, pts in enumerate(pts_x):
       ip1 = (i + 1 ) % 4 
       plt.plot( np.array([pts_x[i], pts_x[ip1]]), np.array([pts_y[i], pts_y[ip1]]), linestyle = 'solid', color = 'white', linewidth = 0.5)
   else:
-    # plot the 2D hexagon for the first BZ 
     for i, pts in enumerate(BZ1_dict['K_points']):
        plt.plot( np.array([BZ1_dict['K_prime_points'][i][0], BZ1_dict['K_points'][i][0]]), np.array([BZ1_dict['K_prime_points'][i][1], BZ1_dict['K_points'][i][1] ]), linestyle = 'solid', color = 'white', linewidth = 0.5)
        ip1 = (i + 1 ) % 3 
        plt.plot( np.array([BZ1_dict['K_points'][i][0], BZ1_dict['K_prime_points'][ip1][0]]), np.array([BZ1_dict['K_points'][i][1], BZ1_dict['K_prime_points'][ip1][1] ]), linestyle = 'solid', color = 'white', linewidth = 0.5)
   
+
+
+def plot_BZ_square():
+  # plot a 2D square for the BZ 
+  pts_x = np.array([-np.pi, -np.pi, np.pi, np.pi])
+  pts_y = np.array([-np.pi, np.pi, np.pi, -np.pi])
+  for i, pts in enumerate(pts_x):
+    ip1 = (i + 1 ) % 4 
+    plt.plot( np.array([pts_x[i], pts_x[ip1]]), np.array([pts_y[i], pts_y[ip1]]), linestyle = 'solid', color = 'white', linewidth = 0.5)
 
 
 
