@@ -1,4 +1,4 @@
-import numpy 
+import numpy as np 
 from scipy.stats import sem 
 
 ''' Helper functions for error propagation for handling stochastic data '''

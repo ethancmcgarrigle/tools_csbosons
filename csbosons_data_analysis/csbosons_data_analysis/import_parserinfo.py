@@ -2,7 +2,6 @@ import numpy as np
 import os
 import yaml
 
-
 def import_parser(input_filename: str):
       if os.path.exists(input_filename):
         with open(input_filename) as infile:

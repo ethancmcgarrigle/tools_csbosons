@@ -8,73 +8,24 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-matplotlib.rcParams['text.usetex'] = True
-#matplotlib.use('TkAgg')
+#matplotlib.rcParams['text.usetex'] = True
+matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
 from matplotlib.colors import LogNorm
 
+# Add directory for package 
+import sys
+my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
+sys.path.append(my_package_path)
+
+from field_analysis import *
+from import_parserinfo import *
+from error_propagation import *
+
 
 # TODO Generalize to 1D and 3D 
-
-def calculate_field_average(field_data, N_spatial, averaging_pcnt): 
-    # Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
-    # field_data is data of N_samples * len(Nx**d), for d-dimensions. Can be complex data
-
-    # Get number of samples
-    N_samples = len(field_data)/(N_spatial)
-
-    assert(N_samples.is_integer())
-    N_samples = int(N_samples)
-
-    if(N_samples == 1):
-      print('1 sample detected. Processing the snapshot instead of averaging')
-      return field_data, np.zeros_like(field_data)
-
-    # Use split (np) to get arrays that represent each sample (1 array per sample) Throw out the first sample (not warmed up properly) 
-    sample_arrays = np.split(field_data, N_samples)
-
-    N_samples_to_avg = int(averaging_pcnt * N_samples)
-    sample_arrays = sample_arrays[len(sample_arrays) - N_samples_to_avg:len(sample_arrays)]
-    print('Averaging over ' + str(N_samples_to_avg) + ' samples') 
-
-    # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
-    averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
-    # Calculate the standard error 
-    std_errs = np.zeros(len(sample_arrays[0]))
-    std_errs += sem(sample_arrays, axis=0)
-    return averaged_data, std_errs
-
-
-
-def calc_err_multiplication(x, y, x_err, y_err):
-    # z = x * y
-    z = x*y
-    result = z * np.sqrt( ((x_err/x)**2)  + ((y_err/y)**2) ) 
-    return result
-
-
-
-def calc_err_addition(x_err, y_err):
-    # Error propagation function for x + y 
-    #result = 0.
-    # assumes x and y are real 
-
-    # Calculate error using standard error formula 
-    result = np.sqrt( (x_err**2) + (y_err**2) )
-    return result
-
-
-def calc_err_average(vector):
-   # error propagation for summing over a whole vector of numbers. The input vector is the 1D list of errors to be propagated  
-   # returns the resulting error
-   err = 0. + 1j*0. 
-   err += (1./len(vector)) * np.sqrt( np.sum( vector**2  ) )
-   return err 
-
-
 
 def process_data(spin_file, N_gridpoints, dim, _Langevin):
     # Load the data 
@@ -223,61 +174,6 @@ def extend_orthorhombic_grid(kx, ky, kz, Sk, Sk_errs):
     return kx, ky, kz, Sk, Sk_errs
 
 
- #def extend_plot(kx, ky, kz, Sk, linear_scale = True):
- #    ''' Depricated! soon to be deleted'''
- #    ''' In-place function that is entended to use in a figure environment. 
- #        - Extends the plot by performing various reciprocol lattice vector translations  
- #        - Takes in a bool (default to True) to show intensity values on a linear scale (False for log scale)
- #        - ASSUMES TRIANGULAR LATTICE (120-degree symmetry) ''' 
- #       
- # #    for i in range(0, 2):
- # #      #global_rotation(kx, ky, 120)
- # #      triangles = tri.Triangulation(kx, ky)
- # #      if(linear_scale):
- # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #      else:
- # #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #    
- #    #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #    # 2. Plot translations (and rotations for each translation) 
- #    for Q in [b1, b2, b3]:
- #      global_translation([kx, ky, kz], Q)
- #      triangles = tri.Triangulation(kx, ky)
- #      if(linear_scale):
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
- #      else:
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
- #
- # #      for i in range(0, 2):
- # #        #global_rotation(kx, ky, 120)
- # #        triangles = tri.Triangulation(kx, ky)
- # #        if(linear_scale):
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #        else:
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #    
- #      #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #      global_translation([kx, ky, kz], -2*Q) # return grid back to original 
- #  
- #      triangles = tri.Triangulation(kx, ky)
- #      if(linear_scale):
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 100) 
- #      else:
- #        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
- # #      for i in range(0, 2):
- # #        #global_rotation(kx, ky, 120)
- # #        triangles = tri.Triangulation(kx, ky)
- # #        if(linear_scale):
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno') 
- # #        else:
- # #          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm()) 
- #      #global_rotation(kx, ky, 120) # to return back to original grid 
- #  
- #      global_translation([kx, ky, kz], Q) # return grid back to original 
-
-
 
 def plot_BZ1(BZ1_dict = {}):
   ''' Function to plot an outline of the first brillouin zone '''
@@ -413,35 +309,27 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
 
 if __name__ == "__main__":
   ''' Script to load and visualize spin-spin correlation data''' 
-  
-  # import the input parameters, specifically the i and j indices 
-  with open('input.yml') as infile:
-    params = yaml.load(infile, Loader=yaml.FullLoader)
+  # Script to load and plot correlation data 
+  params = import_parser('input.yml')
   
   # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
-  Nx = params['system']['NSitesPer-x']
-  Ny = params['system']['NSitesPer-y']
-  Nz = params['system']['NSitesPer-z']
-  T = float(params['system']['beta'])
-  T = 1./T
-  dim = params['system']['Dim']
+  lattice = True
+  grid_pts, dim = extract_grid_details(params, lattice) 
+  N_spatial = calculate_Nspatial(grid_pts, dim)
+  
+  Nx = grid_pts[0] 
+  Ny = grid_pts[1] 
+  Nz = grid_pts[2] 
+  
   system = params['system']['ModelType'] 
-  lattice = params['system']['lattice'] 
-  ntau = params['system']['ntau'] 
   _CL = params['simulation']['CLnoise']
   
-  N_spatial = Nx
+  # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
+  T = float(params['system']['beta'])
+  T = 1./T
+  lattice = params['system']['lattice'] 
+  ntau = params['system']['ntau'] 
   _isPlotting = True
-  
-  if(dim > 1):
-    N_spatial *= Ny
-    if( dim > 2):
-      N_spatial *= Nz
-    else:
-      Nz = 1
-  else:
-    Ny = 1
-    Nz = 1
   
   dirs = {0 : 'x', 1 : 'y', 2 : 'z'}
   
