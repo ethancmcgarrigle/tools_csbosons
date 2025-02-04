@@ -2,8 +2,8 @@ import numpy as np
 from scipy.stats import sem 
 
 def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
-    # Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
-    # field_data is data of N_samples * len(Nx**d), for d-dimensions. Can be complex data
+    ''' Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
+    field_data is data of N_samples * Nx*Ny*Nz, for d-dimensions. Typically complex data'''
 
     # Get number of samples 
     N_samples = len(field_data)/(N_spatial)
@@ -21,7 +21,7 @@ def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to
     sample_arrays = sample_arrays[len(sample_arrays) - N_samples_to_avg:len(sample_arrays)]
 
     # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex_)
+    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
     averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
     # Calculate the standard error 
     std_errs = np.zeros(len(sample_arrays[0]))
