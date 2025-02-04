@@ -5,8 +5,8 @@ import os
 import subprocess 
 import re
 import matplotlib.pyplot as plt
-#matplotlib.rcParams['text.usetex'] = True
-matplotlib.use('TkAgg')
+matplotlib.rcParams['text.usetex'] = True
+#matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
@@ -32,7 +32,7 @@ def calculate_field_average(field_data, N_spatial, N_samples_to_avg): # assumes 
     sample_arrays = sample_arrays[len(sample_arrays) - N_samples_to_avg:len(sample_arrays)]
 
     # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex_)
+    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
     averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
     # Calculate the standard error 
     std_errs = np.zeros(len(sample_arrays[0]))
@@ -71,9 +71,9 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   
   N_samples = int(len(S_x_real)/(N_spatial))
   
-  Sx_vector = np.zeros(len(x), dtype=np.complex_)
-  Sy_vector = np.zeros(len(x), dtype=np.complex_)
-  Sz_vector = np.zeros(len(x), dtype=np.complex_)
+  Sx_vector = np.zeros(len(x), dtype=np.complex128)
+  Sy_vector = np.zeros(len(x), dtype=np.complex128)
+  Sz_vector = np.zeros(len(x), dtype=np.complex128)
   
   # Average the data 
   if(_CL):
