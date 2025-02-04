@@ -1,8 +1,4 @@
 import numpy as np
-import os 
-import subprocess 
-import re
-import pdb
 from scipy.stats import sem 
 
 def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
@@ -99,4 +95,5 @@ def process_data(file_list: list, N_spatial: int, d: int, CL: bool, N_samples_to
       # Calculate average  
       data_vector[i], data_errs[i] = calculate_field_average(data[dim] + 1j*data[dim+1], N_spatial, N_samples_to_avg)   
 
-    return grid, data_vectors, data_errs 
+    return grid, data_vectors, data_errs
+ 
