@@ -30,12 +30,15 @@ def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to
 
 
 
-def extract_grid(field_data: np.ndarray, N_spatial: int) -> tuple:
+def extract_grid(field_data: np.ndarray, N_spatial: int, inRealSpace: bool=True) -> tuple:
     ''' - Takes in a field file, formatted with its first d columns containing spatial coordinates. 
         - Outputs a tuple of np.ndarrays that contain the spatial grid coordinates. 
         - For dimensions less than 3, the unused coordinates are stored as zeros.
         For a k-space field, this returns the reciprocol space grid x <==> kx, y <==> ky, z <==> kz.'''
-    dimension = len(field_data) - 2   # Last two columns are the data (real and complex values) 
+    if(inRealSpace):
+      dimension = len(field_data) - 2   # Last two columns are the data (real and complex values) 
+    else:
+      dimension = (len(field_data) - 2)//2  # k-grid includes kx,ky,kz integer indices  
 
     # Extract the spatial grid  
     x = field_data[0][0:N_spatial]
@@ -52,12 +55,16 @@ def extract_grid(field_data: np.ndarray, N_spatial: int) -> tuple:
     return [x, y, z]
 
 
-def process_data(file_list: list, N_spatial: int, CL: bool, N_samples_to_avg: int = 5) -> tuple:
+def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=True, N_samples_to_avg: int = 5) -> tuple:
     ''' Imports the field data, where the file-names are specified in the file_list and performs any averaging. 
         - N_spatial specifies the total number of spatial grid points in real or k-space. 
         - "CL" is a boolean, indicating whether the field files contain many samples. 
-        - "plots" specifies whether plots will be created and displayed. ''' 
-    ''' Assumes all files have the same grid. 
+        - "inRealSpace" is a boolean, indicating whether the field files are in real space or k-space. 
+     Assumes all files in the file list have the same grid. 
+
+
+     For real space files, a small average over snapshots is desirable. 
+     For k-space files, a long average over many snapshots is desirable (if snapshots are there).
 
         Returns the spatial (or k-space) grid, as well as lists containing the data (for each file) and 
          its standard errors. ''' 
@@ -68,16 +75,21 @@ def process_data(file_list: list, N_spatial: int, CL: bool, N_samples_to_avg: in
     file_data = [] # Create a list to hold the data for each file 
     for file in file_list: 
       file_data.append( np.loadtxt(file, unpack=True) )
+      print('Processing data in file ' + file) 
 
     assert len(file_data) == len(file_list)
 
-    # Extract the spatial (r or k) grid from the first file. 
-    grid = extract_grid(file_data[0], N_spatial) 
-
     # Extract the dimension and the number of samples from the first file 
-    dim = len(file_data[0]) - 2 
-    
-    N_samples = int(len(file_data[0][dim])/N_spatial) 
+    if(inRealSpace):
+      dim = len(file_data[0]) - 2 
+    else:
+      dim = (len(file_data[0]) - 2)//2
+
+    # Extract the spatial (r or k) grid from the first file. 
+    grid = extract_grid(file_data[0], N_spatial, inRealSpace) 
+
+    # Take any column of the first file and divide out the number of spatial degrees of freedom to get N_samples    
+    N_samples = int(len(file_data[0][0])/N_spatial) 
 
     # Extract real and imaginary part of each file and compute the average if necessary 
     data_vectors = [] 
@@ -87,15 +99,21 @@ def process_data(file_list: list, N_spatial: int, CL: bool, N_samples_to_avg: in
     if(not CL):
       N_sample_to_avg = 1 
 
-    if(CL and N_samples_to_avg > N_samples):
+    if(CL and N_samples_to_avg > N_samples and inRealSpace):
       # Default to 5 samples 
       N_samples_to_avg = 5
 
+    if(CL and (not inRealSpace)):
+      N_samples_to_avg = int(0.75 * N_samples)
+    
     for i, data in enumerate(file_data): 
       # Allocate space for extracted vectors
       data_vectors.append(np.zeros(len(grid[0]), dtype=np.complex128))
       data_errs.append(np.zeros(len(grid[0]), dtype=np.complex128))
       # Calculate average  
-      data_vectors[i], data_errs[i] = calculate_field_average(data[dim] + 1j*data[dim+1], N_spatial, N_samples_to_avg)   
+      if(inRealSpace):
+        data_vectors[i], data_errs[i] = calculate_field_average(data[dim] + 1j*data[dim+1], N_spatial, N_samples_to_avg)   
+      else: 
+        data_vectors[i], data_errs[i] = calculate_field_average(data[2*dim] + 1j*data[2*dim+1], N_spatial, N_samples_to_avg)   
 
     return grid, data_vectors, data_errs

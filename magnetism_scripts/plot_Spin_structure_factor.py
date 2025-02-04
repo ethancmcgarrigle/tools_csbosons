@@ -26,42 +26,13 @@ from error_propagation import *
 
 
 # TODO Generalize to 1D and 3D 
-
-def process_data(spin_file, N_gridpoints, dim, _Langevin):
+def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
     # Load the data 
-    print('Processing data in file ' + spin_file) 
-    Sk_raw_data = np.loadtxt(spin_file, unpack=True)
-    Sk_data = Sk_raw_data[2*(dim)] + 1j*Sk_raw_data[2*(dim) + 1]
+    k_grid, Sk_avg, Sk_errs = process_data([spin_file], N_gridpoints, _Langevin, False)
 
-    if(_Langevin):
-      # Average the data 
-      pcnt_averaging = 0.60
-      Sk_avg, Sk_errs = calculate_field_average(Sk_data, N_gridpoints, pcnt_averaging)
-    else:
-      Sk_avg = Sk_data
-      Sk_errs = np.zeros_like(Sk_avg)
-
-    #rho_k_avg_0, rho_k_err_0 = calculate_field_average(rho_k_data_0, Nx, Ny, Nz, dim, int(len(Sk_data) * pcnt_averaging))
-    #rho_negk_avg_0, rho_negk_err_0 = calculate_field_average(rho_negk_data_0, Nx, Ny, Nz, dim, int(len(Sk_data) * pcnt_averaging))
-    #Structure_factor -= (rho_k_avg_0 * rho_negk_avg_0)
-
-    # 1. calc error multiplication for rho(k) and rho(-k)
-    # 2. calc error addition for 1) and then <rho(k) rho(-k)> 
-    #S_k_errs += calc_err_multiplication(rho_k_avg_0, rho_negk_avg_0, rho_k_err_0,  rho_negk_err_0) 
-    #S_k_errs = calc_err_addition(S_k_errs, corr_err) 
-    #S_k_errs = corr_err 
-
-    # Extract the reciprocal (k) grid 
-    kx = Sk_raw_data[0][0:N_gridpoints]
-    if(dim > 1):
-      ky = Sk_raw_data[1][0:N_gridpoints]
-      if(dim > 2):
-        kz = Sk_raw_data[2][0:N_gridpoints]
-      else:
-        kz = np.zeros_like(ky)
-    else:
-      ky = np.zeros_like(kx)
-      kz = np.zeros_like(kx)
+    kx = k_grid[0]    
+    ky = k_grid[1]
+    kz = k_grid[2]
 
     kx, ky, kz, Sk_avg, Sk_errs = extend_orthorhombic_grid(kx, ky, kz, Sk_avg, Sk_errs)
 
@@ -365,7 +336,7 @@ if __name__ == "__main__":
     # loop over each spin direction 
     for nu in range(0, 3):
       S_file = 'S' + str(dirs[nu]) + '_k_S' + str(dirs[nu]) + '_-k_' + str(K) + '.dat' 
-      Sk_alpha.append(process_data(S_file, N_spatial, dim, _CL))
+      Sk_alpha.append(process_Sk_data(S_file, N_spatial, dim, _CL))
     Sk_list.append(Sk_alpha)
 
   for K in range(0, num_basis_sites):
