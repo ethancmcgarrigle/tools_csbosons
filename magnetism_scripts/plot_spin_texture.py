@@ -5,118 +5,55 @@ import os
 import subprocess 
 import re
 import matplotlib.pyplot as plt
-matplotlib.rcParams['text.usetex'] = True
-#matplotlib.use('TkAgg')
+#matplotlib.rcParams['text.usetex'] = True
+matplotlib.use('TkAgg')
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
 import matplotlib.colors as colors
 from matplotlib.colors import ListedColormap, to_rgba
 import seaborn as sns
+import sys
 
-def calculate_field_average(field_data, N_spatial, N_samples_to_avg): # assumes cubic/square mesh 
-    # Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
-    # field_data is data of N_samples * len(Nx**d), for d-dimensions. Can be complex data
+# Add directory for package 
+my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
+sys.path.append(my_package_path)
 
-    # Get number of samples 
-    N_samples = len(field_data)/(N_spatial)
-    assert(N_samples.is_integer())
-    N_samples = int(N_samples)
+from field_analysis import *
+from import_parserinfo import *  
 
-    if(N_samples == 1):
-      print('1 sample detected. Processing the snapshot instead of averaging')
-      return field_data, np.zeros_like(field_data)
+def analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
+  # TODO: Generalize to 3D, allowing 2D visualizations for certain grid cuts/slices  
+  file_list = [Sx_file, Sy_file, Sz_file]
+  spacegrid, S_list, S_err_list = process_data(file_list, N_spatial, CL, 5)
 
-    # Use split (np) to get arrays that represent each sample (1 array per sample) Throw out the first sample (not warmed up properly) 
-    sample_arrays = np.split(field_data, N_samples) 
-    sample_arrays = sample_arrays[len(sample_arrays) - N_samples_to_avg:len(sample_arrays)]
+  x = spacegrid[0]
+  y = spacegrid[1]
+  Sx_vector = S_list[0]
+  Sy_vector = S_list[1]
+  Sz_vector = S_list[2]
 
-    # Final array, initialized to zeros. 
-    averaged_data = np.zeros(len(sample_arrays[0]), dtype=np.complex128)
-    averaged_data += np.mean(sample_arrays, axis=0) # axis=0 calculates element-by-element mean
-    # Calculate the standard error 
-    std_errs = np.zeros(len(sample_arrays[0]))
-    std_errs += sem(sample_arrays, axis=0)
-    return averaged_data, std_errs
-
-
-
-
-def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
-  # Return a list of [Sx, Sy, Sz] in the final spin texture, normalized  
-  cols_x = np.loadtxt(Sx_file, unpack=True)
-  cols_y = np.loadtxt(Sy_file, unpack=True)
-  cols_z = np.loadtxt(Sz_file, unpack=True)
-  
-  # Extract the spatial grid  
-  x = cols_x[0][0:N_spatial]
   if(d > 1):
-    y = cols_x[1][0:N_spatial]
-    if( d > 2 ):
-      z = cols_x[2][0:N_spatial]
-    else:
-      z = np.zeros_like(y)
-  else:
-    y = np.zeros_like(x)
-    z = np.zeros_like(x)
-  
-  S_x_real = cols_x[d]
-  S_x_imag = cols_x[d+1]
-  
-  S_y_real = cols_y[d]
-  S_y_imag = cols_y[d+1]
-  
-  S_z_real = cols_z[d]
-  S_z_imag = cols_z[d+1]
-  
-  N_samples = int(len(S_x_real)/(N_spatial))
-  
-  Sx_vector = np.zeros(len(x), dtype=np.complex128)
-  Sy_vector = np.zeros(len(x), dtype=np.complex128)
-  Sz_vector = np.zeros(len(x), dtype=np.complex128)
-  
-  # Average the data 
-  if(_CL):
-    pcnt = 5./N_samples 
-  else:
-    pcnt = 1./N_samples 
-  
-  Sx_vector, Sx_errs = calculate_field_average(S_x_real + 1j*S_x_imag, N_spatial, int(pcnt * N_samples))   
-  Sy_vector, Sy_errs = calculate_field_average(S_y_real + 1j*S_y_imag, N_spatial, int(pcnt * N_samples))   
-  Sz_vector, Sz_errs = calculate_field_average(S_z_real + 1j*S_z_imag, N_spatial, int(pcnt * N_samples))   
-  
-  if(_CL):
-    print('Averaging: ' + str(int(pcnt * N_samples)) + ' samples')
-  
-  S_data = {'x': x, 'y': y, 'z': z, 'Sx': Sx_vector, 'Sy': Sy_vector, 'Sz': Sz_vector}
-  
-  d_frame_S = pd.DataFrame.from_dict(S_data)
-  
-  # Redefine numpy array post sorting
-  Sx_sorted = np.array(d_frame_S['Sx']) 
-  Sy_sorted = np.array(d_frame_S['Sy']) 
-  Sz_sorted = np.array(d_frame_S['Sz']) 
-  if(d > 1):
-    Sx_sorted.resize(Nx, Ny)
+    Sx_vector.resize(Nx, Ny)
     
-    Sy_sorted.resize(Nx, Ny)
+    Sy_vector.resize(Nx, Ny)
     
-    Sz_sorted.resize(Nx, Ny)
+    Sz_vector.resize(Nx, Ny)
     #Sz_sorted = np.transpose(Sz_sorted) # not needed for quiver 
     #Sz_sorted = np.flip(Sz_sorted, 0) ##  np.flip is only needed for imshow(); for quiver, it is NOT necessary
   
   if(d == 3):
     print('WARNING: visualization script not updated for d = 3 dimensions')
   
-  planar_norm = np.sqrt(Sx_sorted.real**2 + Sy_sorted.real**2)
+  planar_norm = np.sqrt(Sx_vector.real**2 + Sy_vector.real**2)
   # Total norm is a field N(r) where we have calculated the normalizing factor at each site (r)
-  total_norm = np.sqrt(Sx_sorted.real**2 + Sy_sorted.real**2 + Sz_sorted.real**2)
+  total_norm = np.sqrt(Sx_vector.real**2 + Sy_vector.real**2 + Sz_vector.real**2)
   
   #np.savetxt('X_data.dat', list_x)
   #np.savetxt('Y_data.dat', list_y)
-   #np.savetxt('spinX_Data.dat', Sx_sorted.real / total_norm)
-   #np.savetxt('spinY_Data.dat', Sy_sorted.real / total_norm)
-   #np.savetxt('spinZ_Data.dat', Sz_sorted.real / total_norm)
+   #np.savetxt('spinX_Data.dat', Sx_vector.real / total_norm)
+   #np.savetxt('spinY_Data.dat', Sy_vector.real / total_norm)
+   #np.savetxt('spinZ_Data.dat', Sz_vector.real / total_norm)
   
   ## Plot the spin map where the arrow represents (Mx, My); the color represents Mz 
   
@@ -134,7 +71,7 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
         plt.plot([x[i], x[i+1]], [y[i], y[i+1]], color='k', lw = 1.0, zorder = 1)
     
     plt.scatter(x, y, color = 'k', s = 2)
-    plt.quiver(x, y, Sx_sorted.real/total_norm, Sy_sorted.real/total_norm, Sz_sorted.real/total_norm, units = 'xy', cmap=sns_cmap, pivot = 'middle', zorder = 2) 
+    plt.quiver(x, y, Sx_vector.real/total_norm, Sy_vector.real/total_norm, Sz_vector.real/total_norm, units = 'xy', cmap=sns_cmap, pivot = 'middle', zorder = 2) 
     cbar = plt.colorbar()
     cbar.set_label(label = r'$M_{z}$', size = 30, rotation = 2)
     cbar.set_ticks([-1, -0.5, 0.0, 0.5, 1])
@@ -149,7 +86,7 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
     ## Plot the spin map where the arrow is binary and represents Mz: up <==> positive  
     _showBinaryColors = True
     
-    Mz = Sz_sorted.real/np.abs(Sz_sorted.real)
+    Mz = Sz_vector.real/np.abs(Sz_vector.real)
     ## Plot the spin map where the arrow is binary and represents Mz: up <==> positive; additionally, we add color=> blue is up, red is down
     Mz_flattened = Mz.flatten() 
     spin_colors = np.empty((N_spatial, 4))
@@ -177,37 +114,30 @@ def analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
     plt.show()
   
   
-    plt.quiver(x, y, Sx_sorted.real/total_norm, Sy_sorted.real/total_norm, Sz_sorted.real/total_norm, units = 'xy', cmap=sns_cmap, pivot = 'middle', zorder = 2) 
-  return [x, y, Sx_sorted.real, Sy_sorted.real, Sz_sorted.real]
+    plt.quiver(x, y, Sx_vector.real/total_norm, Sy_vector.real/total_norm, Sz_vector.real/total_norm, units = 'xy', cmap=sns_cmap, pivot = 'middle', zorder = 2) 
+  return [x, y, Sx_vector.real, Sy_vector.real, Sz_vector.real]
 
 
 
 
 
 # Script to load and plot correlation data 
-# import the input parameters, specifically the i and j indices 
-with open('input.yml') as infile:
-  params = yaml.load(infile, Loader=yaml.FullLoader)
+params = import_parser('input.yml')
 
 # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
-Nx = params['system']['NSitesPer-x'] 
-Ny = params['system']['NSitesPer-y'] 
-Nz = params['system']['NSitesPer-z'] 
+lattice = True
+grid_pts, d = extract_grid_details(params, lattice) 
+
+Nx = grid_pts[0] 
+Ny = grid_pts[1] 
+Nz = grid_pts[2] 
+
 system = params['system']['ModelType'] 
 d = params['system']['Dim']
 _CL = params['simulation']['CLnoise']
 
-N_spatial = Nx
+N_spatial = calculate_Nspatial(grid_pts, d)
 
-if(d > 1):
-  N_spatial *= Ny
-  if( d > 2):
-    N_spatial *= Nz
-  else:
-    Nz = 1
-else:
-  Ny = 1
-  Nz = 1
 
 num_basis_sites = 1
 if(system == 'HONEYCOMB'):
@@ -221,7 +151,7 @@ if(system == 'HONEYCOMB'):
     Sz_file = 'Mz_' + str(i) + '.dat'
 
     # element of list is: [x, y, Sx_sorted.real, Sy_sorted, Sz_sorted]
-    lattice_textures.append(analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, _CL, False))
+    lattice_textures.append(analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, _CL, False))
 
   # Calculate a total norm for the spin texture 
   # Total norm is a field N(r) where we have calculated the normalizing factor at each site (r)
@@ -324,16 +254,10 @@ if(system == 'HONEYCOMB'):
     plt.ylim(-5, 5)
   plt.show()
 
-
-
 else:
   Sx_file = 'Mx.dat'
   Sy_file = 'My.dat'
   Sz_file = 'Mz.dat'
   _isPlotting = True
-  analyze_data(Sx_file, Sy_file, Sz_file, N_spatial, d, _CL, _isPlotting)
-
-
-
-
+  analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, _CL, _isPlotting)
 
