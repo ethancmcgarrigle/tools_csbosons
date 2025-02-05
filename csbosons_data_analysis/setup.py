@@ -14,7 +14,7 @@ setup(
     description="A collection of helper functions for data analysis of field output data from CSBosonsCpp.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/datahelpers",
+    url="https://github.com/ethancmcgarrigle/tools_csbosons.git#subdirectory=csbosons_data_analysis",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
