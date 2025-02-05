@@ -17,9 +17,9 @@ def extract_grid_details(parser, lattice: bool = True) -> tuple:
       Ny = parser['system']['NSitesPer-y'] 
       Nz = parser['system']['NSitesPer-z'] 
     else:
-      Nx = parser['system']['Nx'] 
-      Ny = parser['system']['Ny'] 
-      Nz = parser['system']['Nz'] 
+      Nx = parser['simulation']['Nx'] 
+      Ny = parser['simulation']['Ny'] 
+      Nz = parser['simulation']['Nz'] 
     dimension = parser['system']['Dim'] 
 
     grid_pts = [Nx, Ny, Nz]

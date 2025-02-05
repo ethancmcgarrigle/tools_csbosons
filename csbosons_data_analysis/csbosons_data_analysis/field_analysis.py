@@ -1,5 +1,7 @@
 import numpy as np
+import pandas as pd 
 from scipy.stats import sem 
+from error_propagation import * 
 
 def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
     ''' Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
@@ -117,3 +119,42 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
         data_vectors[i], data_errs[i] = calculate_field_average(data[2*dim] + 1j*data[2*dim+1], N_spatial, N_samples_to_avg)   
 
     return grid, data_vectors, data_errs
+
+
+
+
+def compute_angular_average(kr: np.ndarray, theta: np.ndarray, data_k: np.ndarray, data_k_errs: np.ndarray, dim: int=2):
+    # TODO: Extend to 3D 
+    if(dim == 1):
+      raise ValueError("Dimension needs to be at least 2 for angular averaging.") 
+
+    if(dim == 3):
+      raise ValueError("Function currently expects dimension = 2. Update for 3D in-progress.") 
+
+    kr_uniq = np.unique(kr)
+
+    # Allocate 1D arrays for angular average     
+    data_kr = np.zeros_like(kr_uniq)
+    data_kr_errs = np.zeros_like(kr_uniq)
+
+    if(dim == 2):    
+      _polar_data = {'kr': kr, 'theta': theta, 'data_k': data_k, 'data_k_errs': data_k_errs}
+      polar_d_frame = pd.DataFrame.from_dict(_polar_data)
+      polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
+
+      # Manually handle kr = 0 element. 
+      data_kr[0] += polar_d_frame['data_k'].iloc[0].real
+      data_kr_errs[0] += polar_d_frame['data_k_errs'].iloc[0].real
+      i = 0
+      for kr_ in kr_uniq[1:len(kr_uniq)]:
+        i += 1
+        tmp_frame = (polar_d_frame['kr'] == kr_)
+        indices = np.where(tmp_frame == True)[0] 
+        #indices = indices[0] # 0th element is the list of true indices 
+        assert(polar_d_frame['kr'].iloc[indices[0]] == kr_)
+        # 2. Extract 
+        data_kr[i] += polar_d_frame['data_k'].iloc[indices].mean().real
+        # propagate error across the average 
+        data_kr_errs[i] += calc_err_average(polar_d_frame['data_k_errs'].iloc[indices].values).real 
+
+    return kr_uniq, data_kr, data_kr_errs
