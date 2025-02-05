@@ -7,15 +7,17 @@ if 'Linux' in platform.platform():
 else:
   matplotlib.rcParams['text.usetex'] = True
 import glob 
-# Add directory for package 
-import sys
-my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
-sys.path.append(my_package_path)
+# Import our custom package for Csbosons data analysis
+from csbosons_data_analysis.field_analysis import *
+from csbosons_data_analysis.import_parserinfo import *
 
-from field_analysis import *
-from import_parserinfo import *
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
 
-# Script to load and plot correlation data 
+
+
+# Begin Script 
 params = import_parser('input.yml')
 
 # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
@@ -47,7 +49,7 @@ for i in range(len(psi_list)):
       psi_list[i] = np.flip(psi_list[i], 0)
 
 
-plt.style.use('~/CSBosonsCpp/tools/python_plot_styles_examples/plot_style_spins.txt')
+plt.style.use(style_path) 
 
 x = spacegrid[0]
 y = spacegrid[1]

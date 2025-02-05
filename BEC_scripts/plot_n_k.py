@@ -13,7 +13,12 @@ from csbosons_data_analysis.field_analysis import *
 from csbosons_data_analysis.import_parserinfo import *
 from csbosons_data_analysis.error_propagation import *
 
-# Script to load and plot correlation data 
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
+
+
+######## Begin script 
 params = import_parser('input.yml')
 
 
@@ -61,7 +66,7 @@ n_k_sorted = np.transpose(n_k_sorted)
 n_k_sorted = np.flip(n_k_sorted, 0)
 
 
-plt.style.use('~/CSBosonsCpp/tools/python_plot_styles_examples/plot_style_spins.txt')
+plt.style.use(style_path)
 
 # Plot the N_k distribution in k-space  
 plt.figure(1)

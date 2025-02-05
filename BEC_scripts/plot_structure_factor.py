@@ -16,6 +16,10 @@ from csbosons_data_analysis.field_analysis import *
 from csbosons_data_analysis.import_parserinfo import *
 from csbosons_data_analysis.error_propagation import *
 
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path_image = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
+style_path_data = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_data.txt') 
 
 #### Begin script #### 
 
@@ -65,10 +69,10 @@ kx = kgrid[0]
 ky = kgrid[1]
 kz = kgrid[2]
 
-plt.style.use('~/CSBosonsCpp/tools/python_plot_styles_examples/plot_style_spins.txt')
 
 # Species loop to plot the structure factors 
 for i, data in enumerate(Sk[0:N_species]):
+  plt.style.use(style_path_image)
   # Create a dictionary for each file, store the grid and necessary data 
   _data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': Sk[i], 'S_k_errs': Sk_errs[i], 
           'rho_k' : rho_k[i], 'rho_k_errs' : rho_k_errs[i], 'rho_-k' : rho_negk[i], 'rho_-k_errs' : rho_negk_errs[i]}
@@ -125,7 +129,8 @@ for i, data in enumerate(Sk[0:N_species]):
   kr_plot, S_kr, S_kr_errs = compute_angular_average(kr, theta, Sk_unsorted, structure_factor_errs, 2) 
   
   # Plot angular average 
-  plt.figure(figsize=(6.77166/2, 6.77166/2))
+  plt.style.use(style_path_data)
+  plt.figure(figsize=(6.77166, 6.77166))
   plt.errorbar(kr_plot, S_kr.real, S_kr_errs.real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='Langevin')
   plt.title('Angular averaged structure factor', fontsize = 22)
   plt.xlabel('$k_{r}$', fontsize = 24, fontweight = 'bold')

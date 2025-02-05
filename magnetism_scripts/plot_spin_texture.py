@@ -21,6 +21,10 @@ import seaborn as sns
 from csbosons_data_analysis.field_analysis import *
 from csbosons_data_analysis.import_parserinfo import *
 
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
+
 def analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   # TODO: Generalize to 3D, allowing 2D visualizations for certain grid cuts/slices  
   file_list = [Sx_file, Sy_file, Sz_file]
@@ -58,7 +62,7 @@ def analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   
   if(plots):
     sns_cmap = ListedColormap(sns.color_palette("RdBu", 256)) 
-    plt.style.use('~/CSBosonsCpp/tools/python_plot_styles_examples/plot_style_spins.txt')
+    plt.style.use(style_path)
     #plt.figure(1)
     plt.figure(figsize=(3.38583*2, 3.38583*2))
     
