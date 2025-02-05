@@ -15,7 +15,7 @@ import pandas as pd
 from scipy.stats import sem 
 from matplotlib.colors import LogNorm
 
-# Add directory for package 
+# Add temporary directory for package 
 import sys
 my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
 sys.path.append(my_package_path)
@@ -343,59 +343,3 @@ if __name__ == "__main__":
     plot_structure_factor(Sk_list[K], False, False, K, num_basis_sites) 
   
 
-# Calculate angular average 
-#kr = np.sqrt(kx**2 + ky**2)
-#theta = np.arctan(ky/kx) # rads 
-#
-#kr_uniq = np.unique(kr)
-#
-#S_kr = np.zeros(len(kr_uniq), dtype=np.complex_)
-#S_kr_errs = np.zeros(len(kr_uniq), dtype=np.complex_)
-#
-#_polar_data = {'kr': kr, 'theta': theta, 'S_k': Structure_factor, 'S_k_errs': S_k_errs}
-#polar_d_frame = pd.DataFrame.from_dict(_polar_data)
-#polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
-#
-#
-#S_kr[0] += polar_d_frame['S_k'].iloc[0]
-#S_kr_errs[0] += polar_d_frame['S_k_errs'].iloc[0]
-#i = 0
-#print(kr[0])
-#for kr_ in kr_uniq[1:len(kr_uniq)]:
-#  i += 1
-#  tmp_frame = (polar_d_frame['kr'] == kr_)
-#  indices = np.where(tmp_frame == True)[0] 
-#  #indices = indices[0] # 0th element is the list of true indices 
-#  assert(polar_d_frame['kr'].iloc[indices[0]] == kr_)
-#  # 2. Extract 
-#  S_kr[i] += polar_d_frame['S_k'].iloc[indices].mean()
-#  # propagate error across the average 
-#  S_kr_errs[i] += calc_err_average(polar_d_frame['S_k_errs'].iloc[indices].values) 
-#
-#
-#
-## Plot angular average 
-#plt.style.use('~/CSBosonsCpp/tools/Figs_scripts/plot_style_orderparams.txt')
-#plt.figure(3)
-#plt.errorbar(kr_uniq, S_kr.real, S_kr_errs.real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='CL')
-#plt.title('Angular Averaged S(k), ' + r'$\tilde T = ' + str(np.round(T_,2)) + '$', fontsize = 22)
-#plt.xlabel('$k_{r}$', fontsize = 24, fontweight = 'bold')
-#plt.ylabel(r'$S(k_{r}) $', fontsize = 24, fontweight = 'bold')
-#plt.axvline(x = 2*_kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2 \tilde{\kappa} = ' + str(2*_kappa) + '$')
-#plt.legend()
-#plt.savefig('S_k_angular_avg.eps')
-#plt.show()
-# 
-##
-## Export list_x[1:stop_indx], corr_sorted[0][1:stop_indx]
-#np.savetxt('S_k_00_angularAvg_data.dat', np.column_stack( [kr_uniq, S_kr.real, S_kr_errs.real] ))
-# #
-# #plt.figure(4)
-# #plt.errorbar(kr_uniq, np.log10(S_kr.real), S_kr_errs.real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='CL')
-# #plt.title('Angular Averaged S(k), ' + r'$\tilde T = ' + str(np.round(T_,2)) + '$', fontsize = 22)
-# #plt.xlabel('$k_{r}$', fontsize = 24, fontweight = 'bold')
-# #plt.ylabel(r'log($S(k_{r}) $)', fontsize = 24, fontweight = 'bold')
-# #plt.axvline(x = 2*_kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2 \tilde{\kappa} = ' + str(_kappa) + '$')
-# #plt.legend()
-# #plt.savefig('S_k_angular_avg_log.eps')
-# #plt.show()
