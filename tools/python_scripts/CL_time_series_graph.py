@@ -21,18 +21,6 @@ def sech(x):
  
 input_file = './operators0.dat'
 
- #with open(input_file, "r") as infi: 
- #  reader = csv.reader(infi, delimiter=' ')
- #  CL_time = list(zip(*reader))[2]
- #  lines = infi.readlines()
-
-#CL_time = np.float_(CL_time[1:])
-
- #N_vals = [] 
- #N2_vals = [] 
- #
- #N_up_vals = []
- #N_dwn_vals = []
 #for f in input_file:
   # unpack all the data
 cols = np.loadtxt(input_file, unpack=True)
@@ -66,17 +54,3 @@ plt.show()
 
 
 
- #plt.figure(4)
- ##plt.title('1 Spin, T = 1K', fontweight = 'bold')
- #plt.plot(CL_time, N_vals, 'k-', linewidth=1.0, markersize = 2, label = 'CL Sampling')
- #plt.plot(CL_time, np.ones(len(N_vals)), 'r--', linewidth=3.0, markersize = 2, label = 'Constraint')
- ##plt.title('ETD-$\psi$ Single Spin', fontsize = 14)
- #plt.xlabel('$\\bf{Simulation \hspace{5px} Time}$', fontsize = 20, fontweight = 'bold')
- #plt.ylabel('$\\bf{N}$', fontsize = 20, fontweight = 'bold')
- ##plt.xlim(0, 200) # CL time 
- #plt.ylim(-10,30)
- ##plt.yscale('log')
- #plt.legend(loc = 'best', bbox_to_anchor=(0.45,0.9), prop = {'weight' : 'bold'})
- #plt.savefig('N_chaotic.eps', format='eps', dpi = 1200)
- #plt.savefig('N_chaotic.svg', format='svg', dpi = 1200)
- #plt.show()
