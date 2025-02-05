@@ -1,12 +1,12 @@
 import numpy as np
 import matplotlib
-import yaml
 import matplotlib.pyplot as plt
-#matplotlib.rcParams['text.usetex'] = True
-matplotlib.use('TkAgg')
-from scipy.stats import sem 
+import platform
+if 'Linux' in platform.platform():
+  matplotlib.use('TkAgg')
+else:
+  matplotlib.rcParams['text.usetex'] = True
 import glob 
-
 # Add directory for package 
 import sys
 my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"

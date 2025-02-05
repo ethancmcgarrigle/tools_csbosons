@@ -11,13 +11,6 @@ import matplotlib.pyplot as plt
 import pdb
 import yaml
 import math
-## This function runs statistics on the runs accessed (i.e. parameter sweep). Then it collects the relevant data and plots it at the end
-
-def sech(x):
-  return 1/(np.cosh(x))
-
-
-
  
 input_file = './operators0.dat'
 
