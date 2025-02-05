@@ -8,21 +8,19 @@ import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-#matplotlib.rcParams['text.usetex'] = True
-matplotlib.use('TkAgg')
+import platform
+if 'Linux' in platform.platform():
+  matplotlib.use('TkAgg')
+else:
+  matplotlib.rcParams['text.usetex'] = True
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
 from matplotlib.colors import LogNorm
-
-# Add temporary directory for package 
-import sys
-my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
-sys.path.append(my_package_path)
-
-from field_analysis import *
-from import_parserinfo import *
-from error_propagation import *
+# Import our custom package for Csbosons data analysis
+from csbosons_data_analysis.field_analysis import *
+from csbosons_data_analysis.import_parserinfo import *
+from csbosons_data_analysis.error_propagation import *
 
 
 # TODO Generalize to 1D and 3D 

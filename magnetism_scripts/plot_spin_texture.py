@@ -5,22 +5,21 @@ import os
 import subprocess 
 import re
 import matplotlib.pyplot as plt
-#matplotlib.rcParams['text.usetex'] = True
-matplotlib.use('TkAgg')
+import platform
+if 'Linux' in platform.platform():
+  matplotlib.use('TkAgg')
+else:
+  matplotlib.rcParams['text.usetex'] = True
 import pdb
 import pandas as pd 
 from scipy.stats import sem 
 import matplotlib.colors as colors
 from matplotlib.colors import ListedColormap, to_rgba
 import seaborn as sns
-import sys
 
-# Add directory for package 
-my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
-sys.path.append(my_package_path)
-
-from field_analysis import *
-from import_parserinfo import *  
+# Import our custom package for Csbosons data analysis
+from csbosons_data_analysis.field_analysis import *
+from csbosons_data_analysis.import_parserinfo import *
 
 def analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
   # TODO: Generalize to 3D, allowing 2D visualizations for certain grid cuts/slices  
