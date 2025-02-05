@@ -22,6 +22,13 @@ def extract_grid_details(parser, lattice: bool = True) -> tuple:
       Nz = parser['simulation']['Nz'] 
     dimension = parser['system']['Dim'] 
 
+    # Convention to ignore N_{\nu} of {\nu} > dim, where \nu = x, y, z. 
+      # i.e. if d = 2, ignore value for Nz. 
+    if(dimension < 3):
+      Nz = 1
+      if(dimension < 2):
+        Ny = 1 
+
     grid_pts = [Nx, Ny, Nz]
     return grid_pts, dimension 
 
