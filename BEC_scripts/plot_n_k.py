@@ -8,14 +8,10 @@ else:
   matplotlib.rcParams['text.usetex'] = True
 import pandas as pd 
 
-# Add directory for package 
-import sys
-my_package_path = "/home/ethan/tools_csbosons/csbosons_data_analysis/csbosons_data_analysis"
-sys.path.append(my_package_path)
-
-from field_analysis import *
-from import_parserinfo import *
-from error_propagation import *
+# Import our custom package for Csbosons data analysis
+from csbosons_data_analysis.field_analysis import *
+from csbosons_data_analysis.import_parserinfo import *
+from csbosons_data_analysis.error_propagation import *
 
 # Script to load and plot correlation data 
 params = import_parser('input.yml')
