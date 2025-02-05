@@ -10,10 +10,10 @@ A collection of helper functions for analyzing field output data from a coherent
 
 ## Installation of csbosons_data_analysis
 ```bash
-pip install git+https://github.com/yourusername/tools_csbosons.git#subdirectory=csbosons_data_analysis
+pip install git+https://github.com/ethancmcgarrigle/tools_csbosons.git#subdirectory=csbosons_data_analysis
 ```
 
 To upgrade the package, you can use the command 
 ```bash
-pip install --upgrade git+https://github.com/yourusername/tools_csbosons.git#subdirectory=csbosons_data_analysis
+pip install --upgrade git+https://github.com/ethancmcgarrigle/tools_csbosons.git#subdirectory=csbosons_data_analysis
 ```
