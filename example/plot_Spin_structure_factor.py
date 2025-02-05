@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib
 import yaml
 import os 
-import subprocess 
-import re
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 import plotly.graph_objects as go
@@ -17,10 +15,15 @@ import pdb
 import pandas as pd 
 from scipy.stats import sem 
 from matplotlib.colors import LogNorm
+
 # Import our custom package for Csbosons data analysis
 from csbosons_data_analysis.field_analysis import *
 from csbosons_data_analysis.import_parserinfo import *
 from csbosons_data_analysis.error_propagation import *
+
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
 
 
 # TODO Generalize to 1D and 3D 
@@ -176,7 +179,7 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
         - Sk_nu,nu is a list of form [kx, ky, kz, Sk_data] 
         - e.g. Sk_list[0] is the list: [kx, ky, kz, Sk_xx] 
         - e.g. Sk_list[1] is the list: [kx, ky, kz, Sk_yy] '''
-    plt.style.use('~/tools_csbosons/python_plot_styles/plot_style_spins.txt')
+    plt.style.use(style_path)
 
     if(ntau > 1 or lattice == 'triangular'):
       _LogPlots = False
