@@ -12,6 +12,8 @@ The repository is organized into 1) BEC scripts, 2) magnetism scripts, 3) analyt
 
 `additional_tools` contains many other scripts that are helpful for data visualization, movie generation, submitting jobs on a slurm or PBS cluster management system, etc. 
 
+Send inquiries or bug reports to ethancmcg@gmail.com 
+
 
 ## csbosons_data_analysis — A python package  
 
