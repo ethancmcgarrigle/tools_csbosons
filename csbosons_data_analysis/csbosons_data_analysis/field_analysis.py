@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd 
 from scipy.stats import sem 
-from error_propagation import * 
+from .error_propagation import * 
 
 def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
     ''' Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
