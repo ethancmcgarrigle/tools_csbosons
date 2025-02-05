@@ -1,0 +1,53 @@
+system:
+  ModelType:     HEISENBERG
+  lattice:       triangular
+  ensemble:      CANONICAL
+  ntau:          80      #32
+  gamma:         0.0
+  U:             1.0
+  hz:            0.0
+  NSitesPer-x:   21
+  NSitesPer-y:   21
+  NSitesPer-z:   1
+  Dim:           2
+  beta:          1.0
+  Jnn:           -2.0
+  Jnnn:          0.00
+  spin:          2.5
+  seed-type:     homogeneous
+  Ising:         true
+  XY:            true
+  operators: { 
+    enableDensityFieldOutput:  false ,
+    enableSpinFields:   true , 
+    enableSpinStructureFactor:   true 
+    }
+  input_file:  
+               { 
+                 filename1:  phi_phistar_0.bin ,
+                 filename2:  phi_phistar_1.bin ,
+                 filename3:  phi_phistar_2.bin ,
+                 filename4:  phi_phistar_3.bin ,
+                 same_Ntau:  false
+               } 
+
+
+simulation:
+  # Time stepping
+  DriverType:  1SI_SPECTRALTAU
+  CLnoise:     true
+  dt:          0.0036
+  numtsteps:   100000
+  iointerval:  500
+  # Random number initialization
+  rndseed:      0  # 
+  N_Warm-up_Steps:  2500
+  Total_CL_Time:   5000
+  apply_ADT:   false
+  MF_Force_tolerance:  1E-5
+  Drift_Tamed:  true
+
+parallel:
+  CUDADeviceID:    0
+  CUDAThreadBlockSize:    256
+  OpenMPThreads:   4  
