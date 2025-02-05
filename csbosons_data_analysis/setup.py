@@ -2,8 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name="csbosons_data_analysis",
-    version="0.1.2",
+    version="0.1.3",
     packages=find_packages(),
+    package_data = {
+           'csbosons_data_analysis' : ['plot_styles/*.txt'],
     install_requires=[
         # List dependencies, 
         'pandas>=1.0.0',
