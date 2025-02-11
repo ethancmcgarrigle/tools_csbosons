@@ -1,5 +1,4 @@
 from scipy.optimize import curve_fit 
-
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -34,9 +33,7 @@ def exponential_fit(x, a, b):
 
 
 
-
 def process_correlator_data(corr_file, N_spatial, d, CL):
-  # TODO: Generalize to 3D, allowing 2D visualizations for certain grid cuts/slices  
   file_list = [corr_file]
   spacegrid, C_list, C_err_list = process_data(file_list, N_spatial, CL, 200)
 
@@ -47,12 +44,7 @@ def process_correlator_data(corr_file, N_spatial, d, CL):
 
   # Would like to calculate all unique "r" vectors 
   r_vector = np.sqrt(x**2 + y**2 + z**2) 
-  #r_vector = np.unique(r_vector)
-  # Only do d == 2 for now 
-  theta = np.arctan(y/x) # rads 
-  r_plot, C_r, C_r_errs = compute_angular_average(r_vector, theta, correlator_data, C_err_list[0], 2) 
-
-  #halfway_indx = len(C_r)//2
+  r_plot, C_r, C_r_errs = compute_angular_average(r_vector, correlator_data, C_err_list[0], True)  # True for correlator
 
   return r_plot, C_r, C_r_errs
 
@@ -67,14 +59,18 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
   half_indx = len(r)//2
 
   # Determine a best fit, based on user specified.
-  if(Fit == 'Exp'):
-    print('Determining fit using exponential decay form')
-    pars,cov = curve_fit(f=exponential_fit, xdata=r[0:half_indx], ydata=data[0:half_indx].real/data[0].real, p0=[0,0], bounds=(-np.inf, np.inf))
-    print(pars)
-  elif(Fit == 'Power'):        
-    print('Determining fit using power-law decay form')
-    pars,cov = curve_fit(f=power_law, xdata=r[1:half_indx], ydata=data[1:half_indx].real/data[0].real, p0=[0,0], bounds=(-np.inf, np.inf))
-    print(pars)
+  if(Fit != 'None'):
+    if(Fit == 'Exp'):
+      r_0 = 0.
+      print('Determining fit using exponential decay form')
+      pars,cov = curve_fit(f=exponential_fit, xdata=r[0:half_indx], ydata=data[0:half_indx].real/data[0].real, p0=[0,0], bounds=(-np.inf, np.inf))
+      print(pars)
+    elif(Fit == 'Power'):        
+      r_0 = 0.25   # avoid singularity at r = 0
+      print('Determining fit using power-law decay form')
+      pars,cov = curve_fit(f=power_law, xdata=r[1:half_indx], ydata=data[1:half_indx].real/data[0].real, p0=[0,-0.1], bounds=(-np.inf, np.inf))
+      print(pars)
+    r_fit = np.linspace(r_0, r[half_indx], 1000)
 
   # Plot angular average 
   print('Plotting the correlation data.')
@@ -84,14 +80,14 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
 
   # Plot the fit 
   if(Fit == 'Exp'):
-    plt.plot(r[0:half_indx], pars[0] * exponential_fit(r[0:half_indx], pars[0], pars[1]), color = 'r', linestyle='solid', linewidth = 2.0, label = 'Exponential fit: ' + r'$\xi = ' + str(round(-1. * pars[1], 2)) + '$') 
+    plt.plot(r_fit, pars[0] * exponential_fit(r_fit, pars[0], pars[1]), color = 'r', linestyle='solid', linewidth = 2.0, label = 'Exponential fit: ' + r'$\xi = ' + str(round(-1. * pars[1], 2)) + '$') 
   elif(Fit == 'Power'):
-    plt.plot(r[0:half_indx], pars[0] * (r[0:half_indx])**(pars[1]), color='r', linestyle = 'solid',linewidth = 2.0, label = 'Power Law: $ r^{' + str(round(pars[1],2)) + '}$')
+    plt.plot(r_fit, pars[0] * (r_fit)**(pars[1]), color='r', linestyle = 'solid',linewidth = 2.0, label = 'Power Law: $ r^{' + str(round(pars[1],2)) + '}$')
 
-  plt.title('Angular averaged Isotropic Spin-Spin Correlation', fontsize = 16)
+  plt.title('Isotropic Spin-Spin Correlation', fontsize = 16)
   plt.xlabel('$|r|$', fontsize = 24, fontweight = 'bold')
   plt.ylabel(r'$C(r)$', fontsize = 24, fontweight = 'bold')
-  #plt.savefig('n_k_angular_averaged.eps')
+  #plt.savefig('spin-spin_correlator.eps')
   plt.legend()
   plt.show()
 
@@ -131,13 +127,12 @@ if __name__ == "__main__":
     num_basis_sites = 1
     basis_site_labels = {0: 'A'}
 
-  #correlator_list = [] # list of length sublattice basis sites (2 for honeycomb) 
   # Main loop to process the correlation data for each sublattice and each spin
   for K in range(0, num_basis_sites):
     # loop over each spin direction 
     S_file = 'C_rprime' + str(K) + '.dat' 
     r, C_r, C_r_errs = process_correlator_data(S_file, N_spatial, dim, _CL)
 
-    plot_correlator(r, C_r, C_r_errs, 'Exp')
+    plot_correlator(r, C_r, C_r_errs, 'Power')
   
 
