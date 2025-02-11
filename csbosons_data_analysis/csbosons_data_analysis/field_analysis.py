@@ -123,7 +123,10 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
 
 
 
-def compute_angular_average(kr: np.ndarray, theta: np.ndarray, data_k: np.ndarray, data_k_errs: np.ndarray, dim: int=2):
+def compute_angular_average(kr: np.ndarray, theta: np.ndarray, data_k: np.ndarray, data_k_errs: np.ndarray, dim: int=2, correlations: bool=False):
+    ''' An optional flag "Correlations" will indicate whether a real-space correlation function is being passed through.
+        Since periodic boundary conditions are assumed, we must NOT average over the entire domain if correlations=True. 
+        Instead, perform the angular average only in the lower left quadrant of the system (r \in [(0,0), (Nx/2 , Ny/2)] )'''
     # TODO: Extend to 3D 
     if(dim == 1):
       raise ValueError("Dimension needs to be at least 2 for angular averaging.") 
@@ -132,6 +135,11 @@ def compute_angular_average(kr: np.ndarray, theta: np.ndarray, data_k: np.ndarra
       raise ValueError("Function currently expects dimension = 2. Update for 3D in-progress.") 
 
     kr_uniq = np.unique(kr)
+
+    # If passing through C(|r|) data, find the halfway indx 
+    if(correlations):
+      halfway_indx = np.where(kr_uniq >= np.max(kr_uniq)/2)[0][0]
+      kr_uniq = kr_uniq[0:halfway_indx] # truncate halfway 
 
     # Allocate 1D arrays for angular average     
     data_kr = np.zeros_like(kr_uniq)

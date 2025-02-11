@@ -25,9 +25,11 @@ style_path_data = os.path.join(os.path.dirname(package_file), 'plot_styles', 'pl
 
 
 def power_law(x, a, b):
+    ''' F(x) = a x^{b} '''
     return a * np.power(x, b)
 
 def exponential_fit(x, a, b):
+    ''' F(x) = a e^{bx} '''
     return a * np.exp(x * b)
 
 
@@ -67,7 +69,7 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
   # Determine a best fit, based on user specified.
   if(Fit == 'Exp'):
     print('Determining fit using exponential decay form')
-    pars,cov = curve_fit(f=exponential_fit, xdata=r[1:half_indx], ydata=data[1:half_indx].real/data[0].real, p0=[0,0], bounds=(-np.inf, np.inf))
+    pars,cov = curve_fit(f=exponential_fit, xdata=r[0:half_indx], ydata=data[0:half_indx].real/data[0].real, p0=[0,0], bounds=(-np.inf, np.inf))
     print(pars)
   elif(Fit == 'Power'):        
     print('Determining fit using power-law decay form')
@@ -78,13 +80,13 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
   print('Plotting the correlation data.')
   plt.style.use(style_path_data)
   plt.figure(figsize=(5,5))
-  plt.errorbar(r[0:half_indx], data[0:half_indx].real/data[0].real, data_errs[0:half_indx].real/data[0].real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 1.00, color = 'black', label='Langevin')
+  plt.errorbar(r[0:half_indx], data[0:half_indx].real/data[0].real, data_errs[0:half_indx].real/data[0].real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='Langevin')
 
   # Plot the fit 
   if(Fit == 'Exp'):
-    plt.plot(r[0:half_indx], pars[0] * exponential_fit(r[0:half_indx], pars[0], pars[1]), color = 'r', linestyle='--', linewidth = 1.0, label = 'Exponential fit: ' + r'$\xi = ' + str(round(-1. * pars[1], 2)) + '$') 
+    plt.plot(r[0:half_indx], pars[0] * exponential_fit(r[0:half_indx], pars[0], pars[1]), color = 'r', linestyle='solid', linewidth = 2.0, label = 'Exponential fit: ' + r'$\xi = ' + str(round(-1. * pars[1], 2)) + '$') 
   elif(Fit == 'Power'):
-    plt.plot(r[0:half_indx], pars[0] * (r[0:half_indx])**(pars[1]), color='r', ls = '--', linewidth = 2.0, label = 'Power Law: $ r^{' + str(round(pars[1],2)) + '}$')
+    plt.plot(r[0:half_indx], pars[0] * (r[0:half_indx])**(pars[1]), color='r', linestyle = 'solid',linewidth = 2.0, label = 'Power Law: $ r^{' + str(round(pars[1],2)) + '}$')
 
   plt.title('Angular averaged Isotropic Spin-Spin Correlation', fontsize = 16)
   plt.xlabel('$|r|$', fontsize = 24, fontweight = 'bold')
@@ -136,6 +138,6 @@ if __name__ == "__main__":
     S_file = 'C_rprime' + str(K) + '.dat' 
     r, C_r, C_r_errs = process_correlator_data(S_file, N_spatial, dim, _CL)
 
-    plot_correlator(r, C_r, C_r_errs, 'Power')
+    plot_correlator(r, C_r, C_r_errs, 'Exp')
   
 
