@@ -84,9 +84,9 @@ plt.show()
 
 # Compute the angular average and plot 
 kr = np.sqrt(kx**2 + ky**2 + kz**2)
-theta = np.arctan(ky/kx) # rads 
+#theta = np.arctan(ky/kx) # rads 
 
-kr_plot, n_kr, n_kr_errs = compute_angular_average(kr, theta, Nk[0], Nk_errs[0], 2) 
+kr_plot, n_kr, n_kr_errs = compute_angular_average(kr, Nk[0], Nk_errs[0]) 
 
 # Plot angular average 
 plt.figure(2)
