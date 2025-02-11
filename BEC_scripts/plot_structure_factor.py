@@ -125,8 +125,8 @@ for i, data in enumerate(Sk[0:N_species]):
   ##### Plot the angular average 
   # Calculate angular average 
   kr = np.sqrt(kx**2 + ky**2 + kz**2)
-  theta = np.arctan(ky/kx) # rads 
-  kr_plot, S_kr, S_kr_errs = compute_angular_average(kr, theta, Sk_unsorted, structure_factor_errs, 2) 
+  #theta = np.arctan(ky/kx) # rads 
+  kr_plot, S_kr, S_kr_errs = compute_angular_average(kr, Sk_unsorted, structure_factor_errs) 
   
   # Plot angular average 
   plt.style.use(style_path_data)
