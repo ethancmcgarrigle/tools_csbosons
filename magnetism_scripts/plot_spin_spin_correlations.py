@@ -50,7 +50,7 @@ def process_correlator_data(corr_file, N_spatial, d, CL):
 
 
 
-def plot_correlator(r, data, data_errs, Fit = 'None'):
+def plot_correlator(r, data, data_errs, Fit = 'None', sublattice_indx=0):
   ''' Function for plotting the correlation function C(|r|), normalized so that C(0) = 1.
       Option to apply and show a best-fit procedure. Current choices: power-law, exponential. 
       Fit = 'Exp' denotes an exponential fit.
@@ -60,6 +60,7 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
 
   # Determine a best fit, based on user specified.
   if(Fit != 'None'):
+    data_linewidth = 0.
     if(Fit == 'Exp'):
       r_0 = 0.
       print('Determining fit using exponential decay form')
@@ -71,12 +72,15 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
       pars,cov = curve_fit(f=power_law, xdata=r[1:half_indx], ydata=data[1:half_indx].real/data[0].real, p0=[0,-0.1], bounds=(-np.inf, np.inf))
       print(pars)
     r_fit = np.linspace(r_0, r[half_indx], 1000)
+  else:
+    data_linewidth = 2.
+     
 
   # Plot angular average 
   print('Plotting the correlation data.')
   plt.style.use(style_path_data)
   plt.figure(figsize=(5,5))
-  plt.errorbar(r[0:half_indx], data[0:half_indx].real/data[0].real, data_errs[0:half_indx].real/data[0].real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='Langevin')
+  plt.errorbar(r[0:half_indx], data[0:half_indx].real/data[0].real, data_errs[0:half_indx].real/data[0].real, marker='o', markersize = 6, elinewidth=2.00, linewidth = data_linewidth, color = 'black', label='Langevin')
 
   # Plot the fit 
   if(Fit == 'Exp'):
@@ -84,7 +88,7 @@ def plot_correlator(r, data, data_errs, Fit = 'None'):
   elif(Fit == 'Power'):
     plt.plot(r_fit, pars[0] * (r_fit)**(pars[1]), color='r', linestyle = 'solid',linewidth = 2.0, label = 'Power Law: $ r^{' + str(round(pars[1],2)) + '}$')
 
-  plt.title('Isotropic Spin-Spin Correlation', fontsize = 16)
+  plt.title('Isotropic Spin-Spin Correlation, Sublattice #' + str(sublattice_indx+1), fontsize = 16)
   plt.xlabel('$|r|$', fontsize = 24, fontweight = 'bold')
   plt.ylabel(r'$C(r)$', fontsize = 24, fontweight = 'bold')
   #plt.savefig('spin-spin_correlator.eps')
@@ -133,6 +137,6 @@ if __name__ == "__main__":
     S_file = 'C_rprime' + str(K) + '.dat' 
     r, C_r, C_r_errs = process_correlator_data(S_file, N_spatial, dim, _CL)
 
-    plot_correlator(r, C_r, C_r_errs, 'Power')
+    plot_correlator(r, C_r, C_r_errs, 'None', K)
   
 
