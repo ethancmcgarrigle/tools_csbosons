@@ -26,7 +26,11 @@ style_path_data = os.path.join(os.path.dirname(package_file), 'plot_styles', 'pl
 # Script to load and plot correlation data 
 params = import_parser('input.yml')
 
-dimensionless = params['system']['dimensionless']
+try: 
+  dimensionless = params['system']['dimensionless']
+except:
+  print('Dimensionless keyword not found, setting to false.')
+  dimensionless = False 
 
 if(dimensionless):
   tmax_key = 'tmax'
@@ -46,6 +50,7 @@ eqb_partnum = cols[3]
 eqb_partnum_im = cols[4]
 
 N_avg_eqb = np.mean(eqb_partnum)
+N_avg_eqb_err = stats.sem(eqb_partnum)
 
 # Get the t range; the first 5 columns are non-dynamical particle number info. 
 first_indx = 5
@@ -94,6 +99,8 @@ plt.show()
 plt.figure(figsize = (4,4))
 plt.errorbar(real_time, dynamical_partnum.real, dynamical_partnum_err.real, color = 'b', linewidth=1.2, elinewidth = 1.2, markersize = 1, label = r'Re[$N$]')
 plt.axhline(y = N_avg_eqb, color = 'k', linestyle = 'solid', linewidth=1.2, label = r'Equilibrium')
+axes = plt.gca()
+axes.fill_between(real_time, N_avg_eqb - N_avg_eqb_err, N_avg_eqb + N_avg_eqb_err, color = 'k', alpha = 0.5) 
 plt.title(title_str, fontsize = 20, fontweight = 'bold')
 plt.xlabel('Real time', fontsize = 24)
 plt.ylabel(r'Dynamical Particle Number', fontsize = 20)
@@ -102,10 +109,12 @@ plt.ylim(N_avg_eqb - 0.1*N_avg_eqb, N_avg_eqb + 0.1*N_avg_eqb)
 plt.show()
 
 # Sample and plot every N points 
-N = 3
+N = 1000
 plt.figure(figsize = (4,4))
 plt.errorbar(real_time[::N], dynamical_partnum[::N].real, dynamical_partnum_err[::N].real, color = 'b', linewidth=1.2, elinewidth = 1.2, markersize = 1, label = r'Re[$N$]')
 plt.axhline(y = N_avg_eqb, color = 'k', linestyle = 'solid', linewidth=1.2, label = r'Equilibrium')
+axes = plt.gca()
+axes.fill_between(real_time, N_avg_eqb - N_avg_eqb_err, N_avg_eqb + N_avg_eqb_err, color = 'k', alpha = 0.5) 
 plt.title('Dynamical particle number', fontsize = 20, fontweight = 'bold')
 plt.xlabel('Real time', fontsize = 24)
 plt.ylabel(r'$N$', fontsize = 24)
