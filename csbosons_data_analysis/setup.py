@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="csbosons_data_analysis",
-    version="1.2.1",
+    version="1.2.5",
     packages=find_packages(),
     package_data = {
            'csbosons_data_analysis' : ['plot_styles/*.txt'] 
