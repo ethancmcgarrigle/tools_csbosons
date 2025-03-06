@@ -204,8 +204,8 @@ def compute_angular_average(kr: np.ndarray, data_k: np.ndarray, data_k_errs: np.
 
     # Allocate 1D arrays for angular average     
     if(nt_points > 1):
-      data_kr = np.zeros((kr_uniq, nt_points), dtype=np.complex128)
-      data_kr_errs = np.zeros((kr_uniq, nt_points), dtype=np.complex128)
+      data_kr = np.zeros((len(kr_uniq), nt_points), dtype=np.complex128)
+      data_kr_errs = np.zeros((len(kr_uniq), nt_points), dtype=np.complex128)
     else:
       data_kr = np.zeros_like(kr_uniq)
       data_kr_errs = np.zeros_like(kr_uniq)
@@ -231,7 +231,7 @@ def compute_angular_average(kr: np.ndarray, data_k: np.ndarray, data_k_errs: np.
         data_kr_errs[i] += calc_err_average(polar_d_frame['data_k_errs'].iloc[indices].values).real 
     else:
       for j in range(nt_points):
-        _polar_data = {'kr': kr, 'data_k': data_k[:, j], 'data_k_errs': data_k_errs}
+        _polar_data = {'kr': kr, 'data_k': data_k[:, j], 'data_k_errs': data_k_errs[:, j]}
         polar_d_frame = pd.DataFrame.from_dict(_polar_data)
         polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
   
