@@ -4,7 +4,7 @@ from scipy.stats import sem
 from .error_propagation import * 
 from .time_grid import TimeGrid
 
-def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
+def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int, suppress_Output: bool=False) -> tuple: 
     ''' Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
     field_data is data of N_samples * Nx*Ny*Nz, for d-dimensions. Typically complex data'''
 
@@ -14,10 +14,12 @@ def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to
     N_samples = int(N_samples)
 
     if(N_samples == 1):
-      print('1 sample detected. Processing the snapshot instead of averaging')
+      if(not suppress_Output):
+        print('1 sample detected. Processing the snapshot instead of averaging')
       return field_data, np.zeros_like(field_data)
     else:
-      print('Computing sample average. Averaging: ' + str(N_samples_to_avg) + ' samples. ')
+      if(not suppress_Output):
+        print('Computing sample average. Averaging: ' + str(N_samples_to_avg) + ' samples. ')
 
     # Use split (np) to get arrays that represent each sample (1 array per sample) Throw out the first sample (not warmed up properly) 
     sample_arrays = np.split(field_data, N_samples) 
@@ -53,56 +55,6 @@ def extract_grid(field_data: np.ndarray, N_spatial: int, dimension: int = 1) -> 
     return [x, y, z]
 
 
- #
- #def process_CSfield_data(file_list: list, N_spatial: int, tgrid: TimeGrid, CL: bool, inRealSpace: bool=False, FrequencyRep: bool=True, N_samples_to_avg: int = 5) -> tuple:
- #    ''' Imports the CSfield data, where the file-names are specified in the file_list and performs any averaging. 
- #        - N_spatial specifies the total number of spatial grid points in real or k-space. 
- #        - "CL" is a boolean, indicating whether the field files contain many samples. 
- #        - "inRealSpace" is a boolean, indicating whether the field files are in real space or k-space. 
- #     Assumes all files in the file list have the same space-time grid.''' 
- #
- #    ''' CSfield data is d+1 dimensional (d spatial dimensions + a time-dimension) 
- #
- #
- #    Return: 
- #      1. The corresponding real-space grid (extracted from the file).  
- #      2. a CSfield object in an array  
- #      3. a CSfield object in an array corresponding to errors, if needed  
- #    '''
- #
- #    if not file_list:
- #      raise ValueError("File list cannot be empty") 
- #
- #    file_data = [] # Create a list to hold the data for each file 
- #    for file in file_list: 
- #      file_data.append( np.loadtxt(file, unpack=True) )
- #      print('Processing data in file ' + file) 
- #
- #    assert len(file_data) == len(file_list)
- #
- #    # Extract the dimension and the number of samples from the first file 
- #    # We require the time grid information to extract the dimensionality. 
- #    # In real space: the file contains 2*_Nt columns + d columns  
- #    # In k space: the file contains 2*_Nt columns + 2*d columns  
- #    # (factor of 2 comes from complex data types at each t-point) 
- #    # Num columns = len(file_data[0])
- #    nt_points = len(tgrid)
- #    if nt_points <= 0:
- #      raise ValueError("Number of time points cannot be zero or negative.")
- #
- #    if(inRealSpace):
- #      dim = len(file_data[0]) - 2*nt_points
- #    else:
- #      dim = (len(file_data[0]) - 2*nt_points)//2
- #
- #    # Extract the spatial (r or k) grid from the first file, using first 3 columns 
- #    # Expects a 2D-array input formatted where the first index represents the column, second represents rows  
- #    #   - for CSfield object, the num rows will be the same as a field object. 
- #    #   - a CSfield object will have more columns. 
- #    #   - the extract_grid() function only uses first 3 columns, so this can handle CSfield array types as well 
- #    grid = extract_grid(file_data[0], N_spatial, inRealSpace) 
- # 
-
 
 def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=True, N_samples_to_avg: int = 5, nt_points: int = 1) -> tuple:
     ''' Imports the field data, where the file-names are specified in the file_list and performs any averaging. 
@@ -137,7 +89,7 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
       dim = (len(file_data[0]) - 2*nt_points)//2
 
     print()
-    print('Dimension of the grid in file: ' + str(dim))
+    print('Spatial Dimension of the grid in file: ' + str(dim) + '.')
     print()
 
     # Extract the spatial (r or k) grid from the first file. 
@@ -178,9 +130,9 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
         # Calculate average 
         for j in range(nt_points): 
           if(inRealSpace):
-            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[dim + 2*j] + 1j*data[dim+1 + 2*j], N_spatial, N_samples_to_avg)   
+            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[dim + 2*j] + 1j*data[dim+1 + 2*j], N_spatial, N_samples_to_avg, True) 
           else: 
-            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[2*dim + 2*j] + 1j*data[2*dim+1 + 2*j], N_spatial, N_samples_to_avg)   
+            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[2*dim + 2*j] + 1j*data[2*dim+1 + 2*j], N_spatial, N_samples_to_avg, True) 
 
     return grid, data_vectors, data_errs
 
