@@ -14,13 +14,25 @@ def import_parser(input_filename: str):
 
 def extract_grid_details(parser, lattice: bool = True) -> tuple:
     if(lattice):
-      Nx = parser['system']['NSitesPer-x'] 
-      Ny = parser['system']['NSitesPer-y'] 
-      Nz = parser['system']['NSitesPer-z'] 
+      Nx = parser['system']['NSitesPer-x']
+      try:
+        Ny = parser['system']['NSitesPer-y']
+      except:
+        Ny = 1 
+      try:
+        Nz = parser['system']['NSitesPer-z'] 
+      except:
+        Nz = 1 
     else:
       Nx = parser['simulation']['Nx'] 
-      Ny = parser['simulation']['Ny'] 
-      Nz = parser['simulation']['Nz'] 
+      try:
+        Ny = parser['simulation']['Ny'] 
+      except:
+        Ny = 1 
+      try:
+        Nz = parser['simulation']['Nz'] 
+      except:
+        Nz = 1 
     dimension = parser['system']['Dim'] 
 
     # Convention to ignore N_{\nu} of {\nu} > dim, where \nu = x, y, z. 
@@ -47,8 +59,8 @@ def extract_time_grid_details(parser) -> TimeGrid:
   else:
     tmax_key = 'tmax_ns'
 
-  tmax = params['system'][tmax_key] 
-  Nt = params['simulation']['nt'] 
+  tmax = parser['system'][tmax_key] 
+  Nt = parser['simulation']['nt'] 
   dt = tmax/Nt
 
   return TimeGrid(tmax, Nt, dt)
