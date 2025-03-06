@@ -18,12 +18,12 @@ class TimeGrid :
       self._dt = dt
 
 
-    self.grid = np.linspace(0., tmax, _Nt)
+    self.grid = np.linspace(0., tmax, Nt)
 
     # Construct a reciprocol w_grid 
     dw = np.pi * 2. / self.tmax
-    w_max = dw * (self._Nt - 1)
-    self.w_grid = np.linspace(0., w_max, _Nt)
+    w_max = dw * (Nt - 1)
+    self.w_grid = np.linspace(0., w_max, Nt)
 
 
   # Standard methods to define 
