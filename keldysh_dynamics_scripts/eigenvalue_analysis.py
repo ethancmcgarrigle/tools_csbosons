@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from scipy import linalg
-from scipy.sparse.linalg import eigs
-from scipy.sparse import diags, csr_matrix
+from scipy.sparse.linalg import eigs, eigsh, gmres
+from scipy.sparse import diags, csr_matrix, lil_matrix
 import os 
 import platform
 if 'Linux' in platform.platform():
@@ -160,15 +160,17 @@ def find_crossover_deltat(N, N_t, x, dtau):
     # Create separate figures for each parameter combination
     for i, d in enumerate(delta1):
       # Create a new figure for each parameter combination
-      #fig, ax = plt.subplots(figsize=(8, 8))
-      #print('Delta1: ' + str(d))
-      
       # Construct the matrix
+      #if(N < 50): # use brute force 
       A = construct_matrix(N, N_t, x, d, dtau)
-            
       # Compute eigenvalues
-      eigenvalues = linalg.eigvals(A)
-      min_eigs[i] = min(eigenvalues.real)
+      min_eigs[i] = return_min_eigenvalue(A)
+      #else:
+        #tmp = return_min_eigenvalue_sparse(N, N_t, x, d, dtau)
+        #print(tmp)
+        
+
+ 
       #print('Delta1 = ' + str(delta1) + ', min(eig.real): ' + str(min(eigenvalues.real)) + ' ' )
     # find and print first instance where the minimum eigenvalues go negative 
     if any(x < 0 for x in min_eigs) :
@@ -182,6 +184,58 @@ def find_crossover_deltat(N, N_t, x, dtau):
     return tmax_possible
 
 
+
+def return_min_eigenvalue_sparse(N, N_t, x, d, dtau):
+    # Create sparse matrix (only store non-zero elements)
+    #diagonals = np.ones(N)
+
+    # Create subdiagonal values
+ #    subdiag = np.zeros(N-1, dtype=complex)
+ #    for i in range(N_t):
+ #        subdiag[i] = -1 + 1j * d * x
+ #    for i in range(N_t, 2*N_t):
+ #        subdiag[i] = -1 - 1j * d * x
+ #    for i in range(2*N_t, N-1):
+ #        subdiag[i] = -1 + dtau * x
+ #    
+ #    # Create sparse matrix with diagonal and subdiagonal
+ #    A = diags([diagonals, subdiag], [0, -1], shape=(N, N), format='csr')
+ #    
+ #    # Add wrap-around element
+ #    A[0, N-1] = -1 + dtau * x
+    
+    A = lil_matrix((N,N), dtype=complex)
+    for i in range(N):
+      A[i,i] = 1.
+ 
+    for i in range(N_t):
+       A[i+1,i] = -1 + 1j * d * x
+    for i in range(N_t, 2*N_t):
+       A[i+1,i] = -1 - 1j * d * x
+    for i in range(2*N_t, N-1):
+       A[i+1, i] = -1 + dtau * x
+    A[0, N-1] = -1. + dtau*x
+    
+    B = A.tocsr()
+ #    sigma = -0.001
+ #
+ #    try:
+ #      eigenvalues = eigs(A, k=4, sigma=sigma, which = 'LM', return_eigenvectors=False, maxiter = 10000, tol=1e-10)
+ #      return eigenvalues[np.argmin(np.real(eigenvalues))]
+ #    except Exception as e:
+ #      print(f"Method 1 failed with error: {e}")     
+ #      return None
+# Shift the matrix to focus on the left side of the spectrum
+
+
+
+
+
+def return_min_eigenvalue(A):
+    ''' A : 2D np.array, of (N x N) dimensionality ''' 
+    # Simple but expensive (O(N^3)) way to get eigenvalue with smallest real part  
+    eigenvalues = linalg.eigvals(A)
+    return min(eigenvalues.real)
 
 
 
