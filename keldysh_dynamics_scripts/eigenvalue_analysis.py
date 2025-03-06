@@ -236,12 +236,13 @@ if __name__ == "__main__":
    
 
     sweep_gridsizes = True 
+    saveFigure = True 
 
     if(sweep_gridsizes):
       # Generate a plot for this grid, computing the necessary tmax as a function of N increasing 
       plt.style.use(style_path_data)
-      N_list = np.array([6, 8, 12, 16, 20, 24, 32, 40, 56, 64, 80, 100, 120, 156, 180, 220, 264, 350, 450, 600, 800, 1200]) 
-      #N_list = np.array([8, 12, 16, 20, 24, 32, 40, 56]) 
+      #N_list = np.array([6, 8, 12, 16, 20, 24, 32, 40, 56, 64, 80, 100, 120, 156, 180, 220, 264, 350, 450, 600, 800, 1200]) 
+      N_list = np.array([8, 12, 16, 20, 24, 32, 40, 56, 64]) 
       tmax_N_list = np.zeros(len(N_list))
       for i, _N in enumerate(N_list):
         tmax_N_list[i] = find_crossover_delta1(2*_N + M, _N, E_0, dtau)
@@ -252,14 +253,18 @@ if __name__ == "__main__":
       plt.xlabel('$N$',fontsize=24) 
       plt.ylabel('$t_{max}$', fontsize = 24, rotation = 0, labelpad=15) 
       plt.legend()
+      if(saveFigure):
+        plt.savefig('tmax_vs_N.pdf', dpi=300)
       plt.show()
 
       plt.figure(figsize = (4,4))
       plt.title('Linear stability', fontsize = 20)
-      plt.plot(tmax_N_list, N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'best possible')
-      plt.ylabel('$N$',fontsize=24) 
-      plt.xlabel('$t_{max}$', fontsize = 24, rotation = 0, labelpad=15) 
+      plt.plot(tmax_N_list, N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'Required gridpoints')
+      plt.ylabel('$N$',fontsize=24, rotation = 0, labelpad=15)
+      plt.xlabel('$t_{max}$', fontsize = 24) 
       plt.legend()
+      if(saveFigure):
+        plt.savefig('N_vs_tmax.pdf', dpi=300)
       plt.show()
 
-
+      np.savetxt('Nreq_vs_tmax.dat', np.column_stack([tmax_N_list, N_list]), header='tmax N_required')
