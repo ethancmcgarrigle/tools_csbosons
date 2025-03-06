@@ -110,20 +110,54 @@ for i, data in enumerate(S_kw[0:N_species]):
   # Plot angular average 
   #plt.style.use(style_path_image)
   #plt.style.use(style_path_image)
+  map_style = 'inferno'
   plt.figure(figsize=(6, 6))
-  plt.imshow(S_kr_omega.real, origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap ='magma')
+  plt.imshow(np.flip(S_kr_omega.real, 0), origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap = map_style)
   plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
   plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
-  plt.colorbar()
-  #plt.colorbar(fraction=0.046, pad=0.04)
-  #plt.zlabel(r'$S(|k|, \omega) $', fontsize = 24, fontweight = 'bold')
+  plt.colorbar(fraction=0.046, pad=0.04)
  #  if('SOC' in system):
  #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
   #plt.savefig('S_k_angular_avg.eps')
   #plt.legend()
   plt.show()
 
+  plt.figure(figsize=(6, 6))
+  plt.imshow(np.flip(S_kr_omega.real, 0), origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap = map_style, norm=LogNorm()) 
+  plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
+  plt.xlabel('$k$', fontsize = 32) 
+  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
+  plt.colorbar(fraction=0.046, pad=0.04)
+ #  if('SOC' in system):
+ #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
+  #plt.savefig('S_k_angular_avg.eps')
+  #plt.legend()
+  plt.show()
+
+  def get_edges(arr):
+    edges = np.zeros(len(arr) + 1)
+    edges[1:-1] = (arr[:-1] + arr[1:]) / 2
+    edges[0] = arr[0] - (arr[1] - arr[0])/2
+    edges[-1] = arr[-1] + (arr[-1] - arr[-2]) / 2
+    return edges 
+
+  k_edges = get_edges(kr)
+  omega_edges = get_edges(w_grid)
+  #K, W = np.meshgrid(kr, w_grid, indexing='ij') 
+
+  plt.figure(figsize=(6, 6))
+  #plt.pcolormesh(K, W, S_kr_omega.real, shading='auto', cmap = map_style) 
+  plt.pcolormesh(k_edges, omega_edges, S_kr_omega.real.T, shading='auto', cmap = map_style) 
+  plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
+  plt.xlabel('$k$', fontsize = 32) 
+  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
+  plt.colorbar(fraction=0.046, pad=0.04)
+ #  if('SOC' in system):
+ #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
+  #plt.savefig('S_k_angular_avg.eps')
+  #plt.legend()
+  plt.show()
  
  #
  #  Sk_sorted.resize(Nx, Ny)
