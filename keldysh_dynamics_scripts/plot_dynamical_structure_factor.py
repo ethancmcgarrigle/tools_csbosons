@@ -19,8 +19,7 @@ from csbosons_data_analysis.time_grid import TimeGrid
 
 # Get plot styles from custom package 
 from csbosons_data_analysis import __file__ as package_file
-style_path_image = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_spins.txt') 
-style_path_data = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_data.txt') 
+style_path_image = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_dynamic_structure_factor.txt') 
 
 #### Begin script #### 
 
@@ -77,144 +76,50 @@ assert(w_0 == 0.)
 
 # Species loop to plot the structure factors 
 for i, data in enumerate(S_kw[0:N_species]):
-  plt.style.use(style_path_image)
   # Create a dictionary for each file, store the grid and necessary data 
-  #_data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': Sk[i], 'S_k_errs': Sk_errs[i], 
-  #        'rho_k' : rho_k[i], 'rho_k_errs' : rho_k_errs[i], 'rho_-k' : rho_negk[i], 'rho_-k_errs' : rho_negk_errs[i]}
   _data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': S_kw[i], 'S_k_errs': S_kw_errs[i]}
-
-  # Create a data frame 
- #  d_frame = pd.DataFrame.from_dict(_data)
- #  d_frame.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True) 
-
-  # Redefine numpy array post sorting
-  #Sk_sorted = np.array(d_frame['S_k']) 
-  #Sk_sorted = np.array(d_frame['S_k']) - (np.array(d_frame['rho_k'])*np.array(d_frame['rho_-k'])) 
-
   # Make an unsorted copy of the flattened array for angular averaging 
   Sk_omega_unsorted = np.zeros_like(S_kw[i])
   Sk_omega_unsorted += (S_kw[i]) 
   # Compute errors  
   structure_factor_errs = np.zeros_like(Sk_omega_unsorted)
-  #structure_factor_errs += calc_err_multiplication(rho_k[i], rho_negk[i], rho_k_errs[i],  rho_negk_errs[i]) 
-  #structure_factor_errs = calc_err_addition(Sk_errs[i], structure_factor_errs) 
   structure_factor_errs += S_kw_errs[i] 
 
   # Perform angular averaging over the k index 
   ''' Plot the angular average''' 
-  # Calculate angular average 
   kr = np.sqrt(kx**2 + ky**2 + kz**2)
-  #theta = np.arctan(ky/kx) # rads 
   kr_plot, S_kr_omega, S_kr_omega_errs = compute_angular_average(kr, Sk_omega_unsorted, structure_factor_errs, False, len(tgrid)) 
+
+  np.savetxt('dynamical_structure_factor_data.dat', S_kr_omega.real) 
+
+  # S(k,w) vector has S[0,0] as w = 0 and k = 0. So the top left corner is true origin. We need to rotate counter clockwise by 90 degrees to get the correct behavior 
+  S_kr_omega = np.rot90(S_kr_omega)
+
+  saveFigs = False 
   
   # Plot angular average 
   #plt.style.use(style_path_image)
-  #plt.style.use(style_path_image)
+  plt.style.use('./plot_style_dynamic_structure_factor.txt')
   map_style = 'inferno'
   plt.figure(figsize=(6, 6))
-  plt.imshow(np.flip(S_kr_omega.real, 0), origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap = map_style)
+  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
   plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
   plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
   plt.colorbar(fraction=0.046, pad=0.04)
- #  if('SOC' in system):
- #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
-  #plt.savefig('S_k_angular_avg.eps')
-  #plt.legend()
+  if(saveFigs):
+    plt.savefig('S_k_omega.pdf', dpi=300)
   plt.show()
 
   plt.figure(figsize=(6, 6))
-  plt.imshow(np.flip(S_kr_omega.real, 0), origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap = map_style, norm=LogNorm()) 
+  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style, norm=LogNorm())
   plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
   plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
   plt.colorbar(fraction=0.046, pad=0.04)
- #  if('SOC' in system):
- #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
-  #plt.savefig('S_k_angular_avg.eps')
-  #plt.legend()
+  if(saveFigs):
+    plt.savefig('S_k_omega_log.pdf', dpi=300)
   plt.show()
 
-  def get_edges(arr):
-    edges = np.zeros(len(arr) + 1)
-    edges[1:-1] = (arr[:-1] + arr[1:]) / 2
-    edges[0] = arr[0] - (arr[1] - arr[0])/2
-    edges[-1] = arr[-1] + (arr[-1] - arr[-2]) / 2
-    return edges 
 
-  k_edges = get_edges(kr)
-  omega_edges = get_edges(w_grid)
-  #K, W = np.meshgrid(kr, w_grid, indexing='ij') 
-
-  plt.figure(figsize=(6, 6))
-  #plt.pcolormesh(K, W, S_kr_omega.real, shading='auto', cmap = map_style) 
-  plt.pcolormesh(k_edges, omega_edges, S_kr_omega.real.T, shading='auto', cmap = map_style) 
-  plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
-  plt.xlabel('$k$', fontsize = 32) 
-  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
-  plt.colorbar(fraction=0.046, pad=0.04)
- #  if('SOC' in system):
- #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
-  #plt.savefig('S_k_angular_avg.eps')
-  #plt.legend()
-  plt.show()
- 
- #
- #  Sk_sorted.resize(Nx, Ny)
- #  Sk_sorted = np.transpose(Sk_sorted)
- #  Sk_sorted = np.flip(Sk_sorted, 0)
- #
- #  # Plot the structure factor  
- #  plt.figure(figsize=(6.77166, 6.77166))
- #  plt.imshow(Sk_sorted.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
- #  plt.title(r'$S_{' + str(i) + str(i) + '} (\mathbf{k})$', fontsize = 30)
- #  plt.xlabel('$k_x$', fontsize = 32) 
- #  plt.ylabel('$k_y$', fontsize = 32)
- #  if('SOC' in system):
- #    plt.xlim(-4.*kappa,4.*kappa)
- #    plt.ylim(-4.*kappa,4.*kappa)
- #  plt.colorbar(fraction=0.046, pad=0.04)
- #  #plt.savefig('Sk.eps')
- #  plt.show()
- #
- #  # Plot structure factor in log-scale  
- #  plt.figure(figsize=(6.77166, 6.77166))
- #  plt.imshow(Sk_sorted.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
- #  plt.title(r'$S_{' + str(i) + str(i) + '} (\mathbf{k})$', fontsize = 30)
- #  plt.xlabel('$k_x$', fontsize = 32) 
- #  plt.ylabel('$k_y$', fontsize = 32)
- #  if('SOC' in system):
- #    plt.xlim(-4.*kappa,4.*kappa)
- #    plt.ylim(-4.*kappa,4.*kappa)
- #  plt.colorbar(fraction=0.046, pad=0.04)
- #  #plt.savefig('Sk_log.eps')
- #  plt.show()
-
- #  ##### Plot the angular average 
- #  # Calculate angular average 
- #  kr = np.sqrt(kx**2 + ky**2 + kz**2)
- #  #theta = np.arctan(ky/kx) # rads 
- #  kr_plot, S_kr, S_kr_errs = compute_angular_average(kr, Sk_unsorted, structure_factor_errs) 
- #  
- #  # Plot angular average 
- #  plt.style.use(style_path_data)
- #  plt.figure(figsize=(6.77166, 6.77166))
- #  plt.errorbar(kr_plot, S_kr.real, S_kr_errs.real, marker='o', markersize = 6, elinewidth=2.00, linewidth = 0.00, color = 'black', label='Langevin')
- #  plt.title('Angular averaged structure factor', fontsize = 22)
- #  plt.xlabel('$k_{r}$', fontsize = 24, fontweight = 'bold')
- #  plt.ylabel(r'$S(k_{r}) $', fontsize = 24, fontweight = 'bold')
- #  if('SOC' in system):
- #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
- #  #plt.savefig('S_k_angular_avg.eps')
- #  plt.legend()
- #  plt.show()
- #
-  # np.savetxt('S_k_00_figure.dat', S_k_sorted.real)
-  #np.savetxt('S_k_00_angularAvg_data.dat', np.column_stack( [kr_uniq, S_kr.real, S_kr_errs.real] ))
-
-
-
-
-
-# TODO: add off-diagonal and total structure factor 
 
