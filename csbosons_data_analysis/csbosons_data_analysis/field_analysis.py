@@ -141,6 +141,8 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
     else:
       dim = (len(file_data[0]) - 2*nt_points)//2
 
+    print('Dimension of the grid in file: ' + str(dim))
+
     # Extract the spatial (r or k) grid from the first file. 
     grid = extract_grid(file_data[0], N_spatial, inRealSpace, dim) 
 
