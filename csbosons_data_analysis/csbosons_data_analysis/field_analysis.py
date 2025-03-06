@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd 
 from scipy.stats import sem 
 from .error_propagation import * 
+from .time_grid import TimeGrid
 
 def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to_avg: int) -> tuple: 
     ''' Calculates the average of a field given sample data, assumes .dat file imported with np.loadtxt, typically field formatting  
@@ -57,19 +58,69 @@ def extract_grid(field_data: np.ndarray, N_spatial: int, inRealSpace: bool=True)
     return [x, y, z]
 
 
-def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=True, N_samples_to_avg: int = 5) -> tuple:
+ #
+ #def process_CSfield_data(file_list: list, N_spatial: int, tgrid: TimeGrid, CL: bool, inRealSpace: bool=False, FrequencyRep: bool=True, N_samples_to_avg: int = 5) -> tuple:
+ #    ''' Imports the CSfield data, where the file-names are specified in the file_list and performs any averaging. 
+ #        - N_spatial specifies the total number of spatial grid points in real or k-space. 
+ #        - "CL" is a boolean, indicating whether the field files contain many samples. 
+ #        - "inRealSpace" is a boolean, indicating whether the field files are in real space or k-space. 
+ #     Assumes all files in the file list have the same space-time grid.''' 
+ #
+ #    ''' CSfield data is d+1 dimensional (d spatial dimensions + a time-dimension) 
+ #
+ #
+ #    Return: 
+ #      1. The corresponding real-space grid (extracted from the file).  
+ #      2. a CSfield object in an array  
+ #      3. a CSfield object in an array corresponding to errors, if needed  
+ #    '''
+ #
+ #    if not file_list:
+ #      raise ValueError("File list cannot be empty") 
+ #
+ #    file_data = [] # Create a list to hold the data for each file 
+ #    for file in file_list: 
+ #      file_data.append( np.loadtxt(file, unpack=True) )
+ #      print('Processing data in file ' + file) 
+ #
+ #    assert len(file_data) == len(file_list)
+ #
+ #    # Extract the dimension and the number of samples from the first file 
+ #    # We require the time grid information to extract the dimensionality. 
+ #    # In real space: the file contains 2*_Nt columns + d columns  
+ #    # In k space: the file contains 2*_Nt columns + 2*d columns  
+ #    # (factor of 2 comes from complex data types at each t-point) 
+ #    # Num columns = len(file_data[0])
+ #    nt_points = len(tgrid)
+ #    if nt_points <= 0:
+ #      raise ValueError("Number of time points cannot be zero or negative.")
+ #
+ #    if(inRealSpace):
+ #      dim = len(file_data[0]) - 2*nt_points
+ #    else:
+ #      dim = (len(file_data[0]) - 2*nt_points)//2
+ #
+ #    # Extract the spatial (r or k) grid from the first file, using first 3 columns 
+ #    # Expects a 2D-array input formatted where the first index represents the column, second represents rows  
+ #    #   - for CSfield object, the num rows will be the same as a field object. 
+ #    #   - a CSfield object will have more columns. 
+ #    #   - the extract_grid() function only uses first 3 columns, so this can handle CSfield array types as well 
+ #    grid = extract_grid(file_data[0], N_spatial, inRealSpace) 
+ # 
+
+
+def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=True, N_samples_to_avg: int = 5, nt_points: int = 1) -> tuple:
     ''' Imports the field data, where the file-names are specified in the file_list and performs any averaging. 
         - N_spatial specifies the total number of spatial grid points in real or k-space. 
         - "CL" is a boolean, indicating whether the field files contain many samples. 
         - "inRealSpace" is a boolean, indicating whether the field files are in real space or k-space. 
+        - nt_points is the number of time points to account for if the field is a CSfield object. 
      Assumes all files in the file list have the same grid. 
-
 
      For real space files, a small average over snapshots is desirable. 
      For k-space files, a long average over many snapshots is desirable (if snapshots are there).
 
-        Returns the spatial (or k-space) grid, as well as lists containing the data (for each file) and 
-         its standard errors. ''' 
+     Returns the spatial (or k-space) grid, as well as lists containing the data (for each file) and its standard errors. ''' 
 
     if not file_list:
       raise ValueError("File list cannot be empty") 
@@ -82,14 +133,18 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
     assert len(file_data) == len(file_list)
 
     # Extract the dimension and the number of samples from the first file 
+    if nt_points <= 0:
+      raise ValueError("Number of time points cannot be zero or negative.")
+
     if(inRealSpace):
-      dim = len(file_data[0]) - 2 
+      dim = len(file_data[0]) - 2*nt_points
     else:
-      dim = (len(file_data[0]) - 2)//2
+      dim = (len(file_data[0]) - 2*nt_points)//2
 
     # Extract the spatial (r or k) grid from the first file. 
     grid = extract_grid(file_data[0], N_spatial, inRealSpace) 
 
+    assert(len(grid[0]) == N_spatial)
     # Take any column of the first file and divide out the number of spatial degrees of freedom to get N_samples    
     N_samples = int(len(file_data[0][0])/N_spatial) 
 
@@ -110,29 +165,35 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
     
     for i, data in enumerate(file_data): 
       # Allocate space for extracted vectors
-      data_vectors.append(np.zeros(len(grid[0]), dtype=np.complex128))
-      data_errs.append(np.zeros(len(grid[0]), dtype=np.complex128))
-      # Calculate average  
-      if(inRealSpace):
-        data_vectors[i], data_errs[i] = calculate_field_average(data[dim] + 1j*data[dim+1], N_spatial, N_samples_to_avg)   
-      else: 
-        data_vectors[i], data_errs[i] = calculate_field_average(data[2*dim] + 1j*data[2*dim+1], N_spatial, N_samples_to_avg)   
+      if(nt_points == 1):
+        data_vectors.append(np.zeros(N_spatial, dtype=np.complex128))
+        data_errs.append(np.zeros(N_spatial, dtype=np.complex128))
+        # Calculate average  
+        if(inRealSpace):
+          data_vectors[i], data_errs[i] = calculate_field_average(data[dim] + 1j*data[dim+1], N_spatial, N_samples_to_avg)   
+        else: 
+          data_vectors[i], data_errs[i] = calculate_field_average(data[2*dim] + 1j*data[2*dim+1], N_spatial, N_samples_to_avg)   
+      else:
+        data_vectors.append(np.zeros((N_spatial, nt_points), dtype=np.complex128))
+        data_errs.append(np.zeros((N_spatial, nt_points), dtype=np.complex128))
+        # Calculate average 
+        for j in range(nt_points): 
+          if(inRealSpace):
+            data_vectors[i][:, j], data_errs[i][:, tj] = calculate_field_average(data[dim + 2*j] + 1j*data[dim+1 + 2*j], N_spatial, N_samples_to_avg)   
+          else: 
+            data_vectors[i][:, j], data_errs[i][:, tj] = calculate_field_average(data[2*dim + 2*j] + 1j*data[2*dim+1 + 2*j], N_spatial, N_samples_to_avg)   
 
     return grid, data_vectors, data_errs
 
 
 
 
-def compute_angular_average(kr: np.ndarray, data_k: np.ndarray, data_k_errs: np.ndarray, correlations: bool=False):
+def compute_angular_average(kr: np.ndarray, data_k: np.ndarray, data_k_errs: np.ndarray, correlations: bool=False, nt_points: int = 1):
     ''' An optional flag "Correlations" will indicate whether a real-space correlation function is being passed through.
         Since periodic boundary conditions are assumed, we must NOT average over the entire domain if correlations=True. 
         Instead, perform the angular average only in the lower left quadrant of the system (r \in [(0,0), (Nx/2 , Ny/2)] )'''
-    # TODO: Test on 3D 
- #    if(dim == 1):
- #      raise ValueError("Dimension needs to be at least 2 for angular averaging.") 
- #
- #    if(dim == 3):
- #      raise ValueError("Function currently expects dimension = 2. Update for 3D in-progress.") 
+    ''' For field arrays, data_k represents a flattened array of data as a function of k. 
+        For CSfield arrays, data_k represents a 2D array of data where the rows represent k-dependence and cols represent t-dependence.'''
 
     kr_uniq = np.unique(kr)
 
@@ -142,27 +203,51 @@ def compute_angular_average(kr: np.ndarray, data_k: np.ndarray, data_k_errs: np.
       kr_uniq = kr_uniq[0:halfway_indx] # truncate halfway 
 
     # Allocate 1D arrays for angular average     
-    data_kr = np.zeros_like(kr_uniq)
-    data_kr_errs = np.zeros_like(kr_uniq)
+    if(nt_points > 1):
+      data_kr = np.zeros((kr_uniq, nt_points), dtype=np.complex128)
+      data_kr_errs = np.zeros((kr_uniq, nt_points), dtype=np.complex128)
+    else:
+      data_kr = np.zeros_like(kr_uniq)
+      data_kr_errs = np.zeros_like(kr_uniq)
 
-    #if(dim == 2):    
-    _polar_data = {'kr': kr, 'data_k': data_k, 'data_k_errs': data_k_errs}
-    polar_d_frame = pd.DataFrame.from_dict(_polar_data)
-    polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
+    if(nt_points == 1):
+      _polar_data = {'kr': kr, 'data_k': data_k, 'data_k_errs': data_k_errs}
+      polar_d_frame = pd.DataFrame.from_dict(_polar_data)
+      polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
 
-    # Manually handle kr = 0 element. 
-    data_kr[0] += polar_d_frame['data_k'].iloc[0].real
-    data_kr_errs[0] += polar_d_frame['data_k_errs'].iloc[0].real
-    i = 0
-    for kr_ in kr_uniq[1:len(kr_uniq)]:
-      i += 1
-      tmp_frame = (polar_d_frame['kr'] == kr_)
-      indices = np.where(tmp_frame == True)[0] 
-      #indices = indices[0] # 0th element is the list of true indices 
-      assert(polar_d_frame['kr'].iloc[indices[0]] == kr_)
-      # 2. Extract 
-      data_kr[i] += polar_d_frame['data_k'].iloc[indices].mean().real
-      # propagate error across the average 
-      data_kr_errs[i] += calc_err_average(polar_d_frame['data_k_errs'].iloc[indices].values).real 
+      # Manually handle kr = 0 element. 
+      data_kr[0] += polar_d_frame['data_k'].iloc[0].real
+      data_kr_errs[0] += polar_d_frame['data_k_errs'].iloc[0].real
+      i = 0
+      for kr_ in kr_uniq[1:len(kr_uniq)]:
+        i += 1
+        tmp_frame = (polar_d_frame['kr'] == kr_)
+        indices = np.where(tmp_frame == True)[0] 
+        #indices = indices[0] # 0th element is the list of true indices 
+        assert(polar_d_frame['kr'].iloc[indices[0]] == kr_)
+        # 2. Extract 
+        data_kr[i] += polar_d_frame['data_k'].iloc[indices].mean().real
+        # propagate error across the average 
+        data_kr_errs[i] += calc_err_average(polar_d_frame['data_k_errs'].iloc[indices].values).real 
+    else:
+      for j in range(nt_points):
+        _polar_data = {'kr': kr, 'data_k': data_k[:, j], 'data_k_errs': data_k_errs}
+        polar_d_frame = pd.DataFrame.from_dict(_polar_data)
+        polar_d_frame.sort_values(by=['kr'], ascending = True, inplace=True) 
+  
+        # Manually handle kr = 0 element. 
+        data_kr[0, j] += polar_d_frame['data_k'].iloc[0].real
+        data_kr_errs[0, j] += polar_d_frame['data_k_errs'].iloc[0].real
+        i = 0
+        for kr_ in kr_uniq[1:len(kr_uniq)]:
+          i += 1
+          tmp_frame = (polar_d_frame['kr'] == kr_)
+          indices = np.where(tmp_frame == True)[0] 
+          #indices = indices[0] # 0th element is the list of true indices 
+          assert(polar_d_frame['kr'].iloc[indices[0]] == kr_)
+          # 2. Extract 
+          data_kr[i, j] += polar_d_frame['data_k'].iloc[indices].mean().real 
+          # propagate error across the average 
+          data_kr_errs[i, j] += calc_err_average(polar_d_frame['data_k_errs'].iloc[indices].values).real 
 
     return kr_uniq, data_kr, data_kr_errs

@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import yaml
+from .time_grid import TimeGrid 
 
 def import_parser(input_filename: str):
       if os.path.exists(input_filename):
@@ -31,6 +32,28 @@ def extract_grid_details(parser, lattice: bool = True) -> tuple:
 
     grid_pts = [Nx, Ny, Nz]
     return grid_pts, dimension 
+
+
+def extract_time_grid_details(parser) -> TimeGrid:
+  ''' - Assumes evenly spaced time grid'''
+  try: 
+    dimensionless = params['system']['dimensionless']
+  except:
+    print('Dimensionless keyword not found, setting to false.')
+    dimensionless = False 
+  
+  if(dimensionless):
+    tmax_key = 'tmax'
+  else:
+    tmax_key = 'tmax_ns'
+
+  tmax = params['system'][tmax_key] 
+  Nt = params['simulation']['nt'] 
+  dt = tmax/Nt
+
+  return TimeGrid(tmax, Nt, dt)
+
+    
 
 
 def calculate_Nspatial(grid_pts: list[int], dim: int) -> int:
