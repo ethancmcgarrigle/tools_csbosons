@@ -59,6 +59,9 @@ print(files)
 kgrid, S_kw, S_kw_errs = process_data(files, N_spatial, _CL, realspace, 2, len(tgrid))
 
 
+print('Number of time points: ' + str(len(tgrid)))
+
+
 N_species = len(files)
 
 kx = kgrid[0]
@@ -66,14 +69,14 @@ ky = kgrid[1]
 kz = kgrid[2]
 
 
-w_grid = tgrid.get_reciprocol_grid
+w_grid = tgrid.get_reciprocol_grid()
 
 w_0 = w_grid[0]
 w_max = w_grid[-1]
 assert(w_0 == 0.)
 
 # Species loop to plot the structure factors 
-for i, data in enumerate(Sk[0:N_species]):
+for i, data in enumerate(S_kw[0:N_species]):
   plt.style.use(style_path_image)
   # Create a dictionary for each file, store the grid and necessary data 
   #_data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': Sk[i], 'S_k_errs': Sk_errs[i], 
@@ -81,8 +84,8 @@ for i, data in enumerate(Sk[0:N_species]):
   _data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': S_kw[i], 'S_k_errs': S_kw_errs[i]}
 
   # Create a data frame 
-  d_frame = pd.DataFrame.from_dict(_data)
-  d_frame.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True) 
+ #  d_frame = pd.DataFrame.from_dict(_data)
+ #  d_frame.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True) 
 
   # Redefine numpy array post sorting
   #Sk_sorted = np.array(d_frame['S_k']) 
@@ -102,20 +105,23 @@ for i, data in enumerate(Sk[0:N_species]):
   # Calculate angular average 
   kr = np.sqrt(kx**2 + ky**2 + kz**2)
   #theta = np.arctan(ky/kx) # rads 
-  kr_plot, S_kr_omega, S_kr_omega_errs = compute_angular_average(kr, Sk_omega_unsorted, structure_factor_errs) 
+  kr_plot, S_kr_omega, S_kr_omega_errs = compute_angular_average(kr, Sk_omega_unsorted, structure_factor_errs, False, len(tgrid)) 
   
   # Plot angular average 
-  plt.style.use(style_path_data)
-  plt.figure(figsize=(10, 8))
-  plt.imshow(S_kr, origin = 'lower', aspect='auto', extent=[w_0, w_max, kr[0], kr[-1]], cmap ='magma')
+  #plt.style.use(style_path_image)
+  #plt.style.use(style_path_image)
+  plt.figure(figsize=(6, 6))
+  plt.imshow(S_kr_omega.real, origin = 'lower', aspect='auto', extent=[kr[0], kr[-1], w_0, w_max], cmap ='magma')
   plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
-  plt.xlabel('$|k|$', fontsize = 24) 
-  plt.ylabel(r'$\omega$', fontsize = 24) 
+  plt.xlabel('$k$', fontsize = 32) 
+  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
+  plt.colorbar()
+  #plt.colorbar(fraction=0.046, pad=0.04)
   #plt.zlabel(r'$S(|k|, \omega) $', fontsize = 24, fontweight = 'bold')
  #  if('SOC' in system):
  #    plt.axvline(x = 2*kappa, color = 'r', linewidth = 2.0, linestyle='dashed', label = r'$2\tilde{\kappa} = ' + str(2.*kappa) + '$')
   #plt.savefig('S_k_angular_avg.eps')
-  plt.legend()
+  #plt.legend()
   plt.show()
 
  
