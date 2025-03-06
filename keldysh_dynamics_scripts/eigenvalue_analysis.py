@@ -154,7 +154,7 @@ def analyze_eigenvalues_for_parameters(N, N_t, x, delta1_values, delta2_values):
             print('Delta1 = ' + str(delta1) + ', min(eig.real): ' + str(min(eigenvalues.real)) + ' ' )
             #eigval = eigs(A, k=1, which='SR', return_eigenvectors=False)
 
-def find_crossover_delta1(N, N_t, x, dtau):
+def find_crossover_deltat(N, N_t, x, dtau):
     delta1 = np.linspace(0.0001, 0.05, 100) 
     min_eigs = np.zeros(len(delta1))
     # Create separate figures for each parameter combination
@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
     dtau = beta/M
     delta2_values = [dtau]
-    best_tmax = find_crossover_delta1(N, N_t, E_0, delta2_values[0])
+    best_tmax = find_crossover_deltat(N, N_t, E_0, delta2_values[0])
    
 
     sweep_gridsizes = True 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
       N_list = np.array([8, 12, 16, 20, 24, 32, 40, 56, 64]) 
       tmax_N_list = np.zeros(len(N_list))
       for i, _N in enumerate(N_list):
-        tmax_N_list[i] = find_crossover_delta1(2*_N + M, _N, E_0, dtau)
+        tmax_N_list[i] = find_crossover_deltat(2*_N + M, _N, E_0, dtau)
   
       plt.figure(figsize = (4,4))
       plt.title('Linear stability', fontsize = 20)
