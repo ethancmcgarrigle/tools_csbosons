@@ -29,7 +29,7 @@ style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_st
 # TODO Generalize to 1D and 3D 
 def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
     # Load the data 
-    k_grid, Sk_avg, Sk_errs = process_data([spin_file], N_gridpoints, _Langevin, False)
+    k_grid, Sk_avg, Sk_errs = process_data([spin_file], N_gridpoints, _Langevin, False) 
 
     kx = k_grid[0]    
     ky = k_grid[1]
