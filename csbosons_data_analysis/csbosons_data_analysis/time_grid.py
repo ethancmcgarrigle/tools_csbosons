@@ -21,7 +21,7 @@ class TimeGrid :
     self.grid = np.linspace(0., tmax, Nt)
 
     # Construct a reciprocol w_grid 
-    dw = np.pi * 2. / self.tmax
+    dw = np.pi * 2. / tmax
     w_max = dw * (Nt - 1)
     self.w_grid = np.linspace(0., w_max, Nt)
 
@@ -39,11 +39,9 @@ class TimeGrid :
   def __getitem__(self, idx: int):
     return self.grid[idx]
 
-
   def get_nearest_index(self, t: float):
     ''' Returns index closest to desired time "t" ''' 
     return np.abs(self.grid - t).argmin()
-
 
   def get_time_range(self, t_start: int, t_end: int):
     ''' Returns time grid, inclusive [t_start, t_end] '''
@@ -54,5 +52,8 @@ class TimeGrid :
 
   def get_reciprocol_grid(self): 
     return self.w_grid 
+
+  def return_dw(self):
+    return (np.pi * 2. / self._tmax) 
 
 
