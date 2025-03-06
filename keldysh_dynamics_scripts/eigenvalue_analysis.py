@@ -1,8 +1,19 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy import linalg
 from scipy.sparse.linalg import eigs
 from scipy.sparse import diags, csr_matrix
+import os 
+import platform
+if 'Linux' in platform.platform():
+  matplotlib.use('TkAgg')
+else:
+  matplotlib.rcParams['text.usetex'] = True
+# Import our custom package for plot styles  
+# Get plot styles from custom package 
+from csbosons_data_analysis import __file__ as package_file
+style_path_data = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_style_data.txt') 
 
 def construct_matrix(N, N_t, x, delta1, delta2):
     """
@@ -144,7 +155,7 @@ def analyze_eigenvalues_for_parameters(N, N_t, x, delta1_values, delta2_values):
             #eigval = eigs(A, k=1, which='SR', return_eigenvectors=False)
 
 def find_crossover_delta1(N, N_t, x, dtau):
-    delta1 = np.linspace(0.0001, 0.05, 80) 
+    delta1 = np.linspace(0.0001, 0.05, 100) 
     min_eigs = np.zeros(len(delta1))
     # Create separate figures for each parameter combination
     for i, d in enumerate(delta1):
@@ -167,6 +178,7 @@ def find_crossover_delta1(N, N_t, x, dtau):
     tmax_possible = N_t*delta1[indx_crossover]
     print('dt value where crossover occurs: ' + str(delta1[indx_crossover]) )
     print('Corresponding t_max = : ' + str(tmax_possible))
+    print()
     return tmax_possible
 
 
@@ -201,7 +213,7 @@ def print_matrix(A):
 if __name__ == "__main__":
     # Parameters
     M = 20
-    N_t = 80     # Number of entries in sections 1 and 2 (must satisfy 2*N_t <= N)
+    N_t = 100   # Number of entries in sections 1 and 2 (must satisfy 2*N_t <= N)
     N = 2*N_t + M
 
     print('Imaginary time slices: ' + str(M))
@@ -210,9 +222,9 @@ if __name__ == "__main__":
     # Energetics of the model and the space grid  
     beta = 0.1
     includeMu = True
-    trap_energy_max = 50.
-    E_K = 3.15827
-    mu = -1.
+    trap_energy_max = 50.0
+    E_K = 3.1582734083e+00
+    mu = -1.0
     if(includeMu):
       E_0 = E_K - mu + trap_energy_max 
     else:
@@ -220,32 +232,34 @@ if __name__ == "__main__":
 
     dtau = beta/M
     delta2_values = [dtau]
-    #analyze_eigenvalues_for_parameters(N, N_t, x, delta1_values, delta2_values)
-    #best_tmax = find_crossover_delta1(N, N_t, E_0, delta2_values[0])
-    best_tmax = find_crossover_delta1(2*2 + M, 2, E_0, delta2_values[0])
+    best_tmax = find_crossover_delta1(N, N_t, E_0, delta2_values[0])
+   
+
+    sweep_gridsizes = True 
+
+    if(sweep_gridsizes):
+      # Generate a plot for this grid, computing the necessary tmax as a function of N increasing 
+      plt.style.use(style_path_data)
+      N_list = np.array([6, 8, 12, 16, 20, 24, 32, 40, 56, 64, 80, 100, 120, 156, 180, 220, 264, 350, 450, 600, 800, 1200]) 
+      #N_list = np.array([8, 12, 16, 20, 24, 32, 40, 56]) 
+      tmax_N_list = np.zeros(len(N_list))
+      for i, _N in enumerate(N_list):
+        tmax_N_list[i] = find_crossover_delta1(2*_N + M, _N, E_0, dtau)
+  
+      plt.figure(figsize = (4,4))
+      plt.title('Linear stability', fontsize = 20)
+      plt.plot(N_list, tmax_N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'best possible')
+      plt.xlabel('$N$',fontsize=24) 
+      plt.ylabel('$t_{max}$', fontsize = 24, rotation = 0, labelpad=15) 
+      plt.legend()
+      plt.show()
+
+      plt.figure(figsize = (4,4))
+      plt.title('Linear stability', fontsize = 20)
+      plt.plot(tmax_N_list, N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'best possible')
+      plt.ylabel('$N$',fontsize=24) 
+      plt.xlabel('$t_{max}$', fontsize = 24, rotation = 0, labelpad=15) 
+      plt.legend()
+      plt.show()
 
 
-    # Generate a plot for this grid, computing the necessary tmax as a function of N increasing 
-    N_list = [6, 8, 12, 16, 20, 24, 32, 40, 56, 64, 80, 100, 120, 156, 180, 220, 264, 350, 450, 600, 800, 1000]
-    #N_list = np.array([6, 8, 12, 16, 20, 24, 32, 40, 56, 64, 80])
-    tmax_N_list = np.zeros(len(N_list))
-    for i, _N in enumerate(N_list):
-      tmax_N_list[i] = find_crossover_delta1(2*_N + M, _N, E_0, dtau)
-
-    plt.figure(figsize = (4,4))
-    plt.title('Linear stability', fontsize = 20)
-    plt.plot(N_list, tmax_N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'best possible')
-    plt.xlabel('N Real time points',fontsize=24) 
-    plt.ylabel('$t_{max}$', fontsize = 24) 
-    plt.legend()
-    plt.show()
-
- #    plt.figure(figsize = (4,4))
- #    plt.title('Linear stability', fontsize = 20)
- #    plt.plot(N_list, tmax_N_list, color = 'k', linestyle = 'solid', linewidth = 1.5, marker = 'o', label = 'best possible')
- #    plt.xlabel('N Real time points',fontsize=24) 
- #    plt.ylabel('$t_{max}$', fontsize = 24) 
- #    plt.legend()
- #    plt.xscale('log')
- #    plt.show()
- 
