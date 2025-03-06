@@ -179,9 +179,9 @@ def process_data(file_list: list, N_spatial: int, CL: bool, inRealSpace: bool=Tr
         # Calculate average 
         for j in range(nt_points): 
           if(inRealSpace):
-            data_vectors[i][:, j], data_errs[i][:, tj] = calculate_field_average(data[dim + 2*j] + 1j*data[dim+1 + 2*j], N_spatial, N_samples_to_avg)   
+            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[dim + 2*j] + 1j*data[dim+1 + 2*j], N_spatial, N_samples_to_avg)   
           else: 
-            data_vectors[i][:, j], data_errs[i][:, tj] = calculate_field_average(data[2*dim + 2*j] + 1j*data[2*dim+1 + 2*j], N_spatial, N_samples_to_avg)   
+            data_vectors[i][:, j], data_errs[i][:, j] = calculate_field_average(data[2*dim + 2*j] + 1j*data[2*dim+1 + 2*j], N_spatial, N_samples_to_avg)   
 
     return grid, data_vectors, data_errs
 
