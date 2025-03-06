@@ -3,7 +3,7 @@ from .error_propagation import *
 from .import_parserinfo import *
 from .time_grid import TimeGrid
 
-__version__ = '1.1.5'
+__version__ = '1.1.6'
 
 
 # List public objects

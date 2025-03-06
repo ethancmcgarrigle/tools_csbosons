@@ -50,6 +50,7 @@ def extract_time_grid_details(parser) -> TimeGrid:
   ''' - Assumes evenly spaced time grid'''
   try: 
     dimensionless = params['system']['dimensionless']
+    print('Running a dimensionless model? ' + str(dimensionless))
   except:
     print('Dimensionless keyword not found, setting to false.')
     dimensionless = False 
