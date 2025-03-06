@@ -33,15 +33,15 @@ def calculate_field_average(field_data: np.ndarray, N_spatial: int, N_samples_to
 
 
 
-def extract_grid(field_data: np.ndarray, N_spatial: int, inRealSpace: bool=True) -> tuple:
+def extract_grid(field_data: np.ndarray, N_spatial: int, inRealSpace: bool=True, nt_points: int = 1) -> tuple:
     ''' - Takes in a field file, formatted with its first d columns containing spatial coordinates. 
         - Outputs a tuple of np.ndarrays that contain the spatial grid coordinates. 
         - For dimensions less than 3, the unused coordinates are stored as zeros.
         For a k-space field, this returns the reciprocol space grid x <==> kx, y <==> ky, z <==> kz.'''
     if(inRealSpace):
-      dimension = len(field_data) - 2   # Last two columns are the data (real and complex values) 
+      dimension = len(field_data) - 2*nt_points   # Last two columns are the data (real and complex values) 
     else:
-      dimension = (len(field_data) - 2)//2  # k-grid includes kx,ky,kz integer indices  
+      dimension = (len(field_data) - 2*nt_points)//2  # k-grid includes kx,ky,kz integer indices  
 
     # Extract the spatial grid  
     x = field_data[0][0:N_spatial]
