@@ -98,8 +98,7 @@ for i, data in enumerate(S_kw[0:N_species]):
   saveFigs = False 
   
   # Plot angular average 
-  #plt.style.use(style_path_image)
-  plt.style.use('./plot_style_dynamic_structure_factor.txt')
+  plt.style.use(style_path_image)
   map_style = 'inferno'
   plt.figure(figsize=(6, 6))
   plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
