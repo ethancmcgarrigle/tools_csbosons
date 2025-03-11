@@ -90,35 +90,54 @@ for i, data in enumerate(S_kw[0:N_species]):
   kr = np.sqrt(kx**2 + ky**2 + kz**2)
   kr_plot, S_kr_omega, S_kr_omega_errs = compute_angular_average(kr, Sk_omega_unsorted, structure_factor_errs, False, len(tgrid)) 
 
-  np.savetxt('dynamical_structure_factor_data.dat', S_kr_omega.real) 
+  #np.savetxt('dynamical_structure_factor_data.dat', S_kr_omega.real) 
+  #np.savetxt('S_kr_t_data.dat', S_kr_omega.real) 
 
   # S(k,w) vector has S[0,0] as w = 0 and k = 0. So the top left corner is true origin. We need to rotate counter clockwise by 90 degrees to get the correct behavior 
   S_kr_omega = np.rot90(S_kr_omega)
 
   saveFigs = False 
+  inTimeRep = True
+
+  if(inTimeRep):
+    print('Plotting the structure factor in S(k,t) representation')
+  else:
+    print('Plotting the structure factor in S(k,w) representation')
   
   # Plot angular average 
   plt.style.use(style_path_image)
   map_style = 'inferno'
   plt.figure(figsize=(6, 6))
-  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
-  plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
+  if(inTimeRep):
+    y_0 = 0. 
+    y_max = tgrid.return_tmax()
+    ylabel = '$t$'
+    title = r'Dynamical Structure Factor: $S(k, t)$'
+  else:
+    y_0 = w_0
+    y_max = w_max
+    ylabel = r'$\omega$'
+    title = r'Dynamical Structure Factor: $S(k, \omega)$'
+
+  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], y_0, y_max], cmap = map_style)
+  plt.title(title, fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
-  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
+  plt.ylabel(ylabel, fontsize = 32, rotation = 0, labelpad = 16) 
   plt.colorbar(fraction=0.046, pad=0.04)
   if(saveFigs):
     plt.savefig('S_k_omega.pdf', dpi=300)
   plt.show()
 
-  plt.figure(figsize=(6, 6))
-  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style, norm=LogNorm())
-  plt.title(r'Dynamical Structure Factor: $S(k, \omega)$', fontsize = 22)
-  plt.xlabel('$k$', fontsize = 32) 
-  plt.ylabel(r'$\omega$', fontsize = 32, rotation = 0, labelpad = 16) 
-  plt.colorbar(fraction=0.046, pad=0.04)
-  if(saveFigs):
-    plt.savefig('S_k_omega_log.pdf', dpi=300)
-  plt.show()
+  if(not inTimeRep):
+    plt.figure(figsize=(6, 6))
+    plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], y_0, y_max], cmap = map_style, norm=LogNorm())
+    plt.title(title, fontsize = 22)
+    plt.xlabel('$k$', fontsize = 32) 
+    plt.ylabel(ylabel, fontsize = 32, rotation = 0, labelpad = 16) 
+    plt.colorbar(fraction=0.046, pad=0.04)
+    if(saveFigs):
+      plt.savefig('S_k_omega_log.pdf', dpi=300)
+    plt.show()
 
 
 

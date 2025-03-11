@@ -150,13 +150,13 @@ def calculate_Sk_t(t_grid: TimeGrid, k_grid, beta, mu, lamb):
   tmpfield = np.zeros(N_wavevectors, dtype=np.complex128)
 
   # TODO: Currently brute forced. Need to vectorize 
-  for j, t in enumerate(t_grid):
+  for j, time in enumerate(t_grid[:]):
     # loop through the wavevectors in each direction to fill in S(k) at a given time 
     for i in range(N_wavevectors):
       # Index i represents the ith wavevector in a list of unique, flattened wavevectors 
         # Need to map from the unique index i to a vector element of kx,ky,kz
       # Get the current wavevector
-      kx_idx, ky_idx, kz_idx = map_flat_to_vector(i, Nx_list)
+      kx_idx, ky_idx, kz_idx = map_flat_to_vector(i)
       k = np.array([kx.flatten()[kx_idx], ky.flatten()[ky_idx], kz.flatten()[kz_idx]])
  #      if(j == 0):
  #        print('k = ' + str(np.abs(k)))
@@ -168,50 +168,34 @@ def calculate_Sk_t(t_grid: TimeGrid, k_grid, beta, mu, lamb):
 
           # For this k, sum on q (the whole k grid), considering states in the given k grid only 
       kpq = np.copy(k_grid) # q  
-      for i in range(2):
-        kpq[i] += k[i]  # k + q 
+      for nu in range(3):
+        kpq[nu] += k[nu]  # k + q 
 
       E_kpq = lamb*(kpq[0]*kpq[0] + kpq[1]*kpq[1] + kpq[2]*kpq[2]).flatten() 
       E_q = lamb*(k2_grid)
  #      if(j == 0):
  #        print((E_kpq - E_q))
       # Compute the S(k,t) contribution 
-      tmpfield.fill(0.)
-      tmpfield += np.exp(-1j * (E_kpq - E_q)*t)
+      #tmpfield.fill(0.)
+      tmpfield = np.exp(-1j * (E_kpq - E_q)*time)
+      tmpfield *= (1. + N_B_Eq(E_q, beta, mu)) 
+      tmpfield *= N_B_Eq(E_kpq, beta, mu) 
 #      if(j == 50):
 #        print(tmpfield)
 #        print(t_grid[j])
-      tmpfield *= N_B_Eq(E_kpq, beta, mu) 
-      tmpfield *= (1. + N_B_Eq(E_q, beta, mu)) 
       Sk_t[i, j] += np.sum(tmpfield) # performs sum over q  
 
   return Sk_t
 
 
-def map_flat_to_vector(flat_indx: int, Nx_list) -> int:
+def map_flat_to_vector(flat_indx: int) -> int:
     ''' Maps an index from a flattened array to a vector
        - Returns the corresponding x, y, z indices
        - Assumes a cubic implementation '''  
-
-    assert len(Nx_list) == 3
-
-    coord = np.array([0, 0, 0])
-
-    flat_indx_tmp = 0 
-    flat_indx_tmp += flat_indx
-
-    Nx = Nx_list[0] 
-    Ny = Nx_list[1] 
-    Nz = Nx_list[2] 
-
-    for idir in range(len(Nx_list)):
-      div = 1
-      for jdir in range(idir+1, len(Nx_list)): 
-        div *= Nx_list[jdir] 
-      coord[idir] = flat_indx_tmp / div
-      flat_indx_tmp %= div
-
-    return coord[0], coord[1], coord[2] 
+    i = flat_indx // (Nz * Ny)
+    j = (flat_indx // Nz) % Ny
+    k = flat_indx % Nz
+    return i, j, k 
     
 
 
@@ -232,8 +216,8 @@ if __name__ == "__main__":
     print('Dimensionless keyword not found, setting to false.')
     dimensionless = False 
 
-  if(dimensionless and mu < 0.):
-    mu = -1. 
+  if(dimensionless): 
+    mu = 1. * np.sign(mu) 
   
   if(model == 'BOSE_HUBBARD_CUBIC'):
     Nx = params['system']['NSitesPer-x'] 
@@ -280,12 +264,12 @@ if __name__ == "__main__":
     k_grid = [kx, ky, kz]
     # Computes S(k,t) where k = 0, t = 0 corresponds to top left corner. k =0, t > 0 is on the top row, k \neq 0, t = 0 is the first column.
     # Therefore, must rotate by 90-degrees counterclockwise 
-    Sk_t = calculate_Sk_t(tgrid, k_grid, beta, mu, lamb)
+    Sk_t_out = calculate_Sk_t(tgrid, k_grid, beta, mu, lamb)
     saveFigs = False 
 
     ''' Plot the angular average''' 
     kr = np.sqrt(kx*kx + ky*ky + kz*kz).flatten()
-    kr_plot, S_kr_t, S_kr_t_errs = compute_angular_average(kr, Sk_t, np.zeros_like(Sk_t), False, Nt) 
+    kr_plot, S_kr_t, S_kr_t_errs = compute_angular_average(kr, Sk_t_out, np.zeros_like(Sk_t_out), False, Nt) 
 
     S_kr_t = np.rot90(S_kr_t) 
 
@@ -303,16 +287,16 @@ if __name__ == "__main__":
       plt.savefig('S_kr_t.pdf', dpi=300)
     plt.show()
 
-    plt.figure(figsize=(6, 6))
-    #plt.imshow(Sk_t.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
-    plt.imshow(S_kr_t.imag, extent=[kr_plot[0], kr_plot[-1], 0., tmax], cmap = map_style)
-    plt.title(r'Dynamical Structure Factor: $S(k, t)$', fontsize = 22)
-    plt.xlabel('$k$', fontsize = 32) 
-    plt.ylabel(r'$t$', fontsize = 32, rotation = 0, labelpad = 16) 
-    plt.colorbar(fraction=0.046, pad=0.04)
-    if(saveFigs):
-      plt.savefig('S_kr_t.pdf', dpi=300)
-    plt.show()
+ #    plt.figure(figsize=(6, 6))
+ #    #plt.imshow(Sk_t.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
+ #    plt.imshow(S_kr_t.imag, extent=[kr_plot[0], kr_plot[-1], 0., tmax], cmap = map_style)
+ #    plt.title(r'Dynamical Structure Factor: $S(k, t)$', fontsize = 22)
+ #    plt.xlabel('$k$', fontsize = 32) 
+ #    plt.ylabel(r'$t$', fontsize = 32, rotation = 0, labelpad = 16) 
+ #    plt.colorbar(fraction=0.046, pad=0.04)
+ #    if(saveFigs):
+ #      plt.savefig('S_kr_t.pdf', dpi=300)
+ #    plt.show()
 
 
 
