@@ -46,6 +46,42 @@ def extract_grid_details(parser, lattice: bool = True) -> tuple:
     return grid_pts, dimension 
 
 
+
+def extract_cell_details(parser, lattice: bool = True) -> list:
+    try:
+      dim = parser['system']['Dim']
+    except:
+      ValueError('Could not find dimension from parser.') 
+
+    L_list = []
+    if(lattice):
+      L_list, dim = extract_grid_details(parser, lattice)
+    else:
+      Lx = parser['system']['CellLength-x'] 
+      if(dim > 1):
+        try:
+          Ly = parser['system']['CellLength-y'] 
+        except:
+          Ly = 1 
+        if(dim > 2):
+          try:
+            Lz = parser['system']['CellLength-z'] 
+          except:
+            Nz = 1 
+      L_list.append(Lx)
+      L_list.append(Ly)
+      L_list.append(Lz)
+    
+    # Convention to ignore N_{\nu} of {\nu} > dim, where \nu = x, y, z. 
+      # i.e. if d = 2, ignore value for Lz. 
+    if(dim < 3):
+      L_list[2] = 1
+      if(dim < 2):
+        L_list[1] = 1 
+
+    return L_list 
+
+
 def extract_time_grid_details(parser) -> TimeGrid:
   ''' - Assumes evenly spaced time grid'''
   try: 
