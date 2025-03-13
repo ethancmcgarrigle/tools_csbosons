@@ -41,17 +41,15 @@ def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
 
     d_frame_Sk = pd.DataFrame.from_dict(processed_data)
 
+    d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
     if(lattice == 'square'): # process for later usage of imshow()
-      d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
       # Redefine numpy array post sorting
       Sk_processed = np.array(d_frame_Sk['S(k)']) 
       augmentation_factor = int(np.sqrt(int(len(kx) / (Nx * Ny * Nz))))
       Sk_processed.resize(Nx * augmentation_factor, Ny * augmentation_factor)
-      #Sk_processed.resize(Nx, Ny)
       Sk_processed = np.transpose(Sk_processed)
       Sk_processed = np.flip(Sk_processed, 0)
     else:
-      d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
       Sk_processed = np.array(d_frame_Sk['S(k)']) 
 
     return [np.array(d_frame_Sk['kx']), np.array(d_frame_Sk['ky']), np.array(d_frame_Sk['kz']), Sk_processed]
@@ -201,7 +199,6 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
       if(lattice == 'square'):
         #plot_BZ_square()
         plot_BZ1()
-        #plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
         plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
         BZ1_end = np.pi 
         plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
@@ -216,11 +213,7 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
         plot_BZ1(BZ1_dict)
         # Plot the structure factor 
         triangles = tri.Triangulation(kx, ky)
-        #plt.triplot(triangles, zorder = 2)
         plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 200, zorder=1) 
-        #plt.plot([0.], [0.], color='red', marker = 'o') 
-
-        #extend_plot(kx, ky, kz, Sk, True)
 
         # Plot the domain (kx, ky) \in [-1.25BZ, 1.25BZ]
         plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
