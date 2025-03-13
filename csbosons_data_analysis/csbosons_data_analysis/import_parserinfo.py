@@ -59,15 +59,20 @@ def extract_cell_details(parser, lattice: bool = True) -> list:
     else:
       Lx = parser['system']['CellLength-x'] 
       if(dim > 1):
-        try:
-          Ly = parser['system']['CellLength-y'] 
-        except:
-          Ly = 1 
         if(dim > 2):
           try:
             Lz = parser['system']['CellLength-z'] 
           except:
-            Nz = 1 
+            Lz = 1.
+        else:
+          Lz = 1. 
+
+        try:
+          Ly = parser['system']['CellLength-y'] 
+        except:
+          Ly = 1.
+      else:
+        Ly = 1. 
       L_list.append(Lx)
       L_list.append(Ly)
       L_list.append(Lz)

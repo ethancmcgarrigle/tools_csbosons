@@ -54,6 +54,13 @@ realspace = False
 # Extract spatial grid details 
 grid_pts, d = extract_grid_details(params, lattice) 
 
+# Extract cell information 
+L = extract_cell_details(params, lattice)
+Vol = 1. 
+for i in range(len(L)):
+  Vol *= L[i]
+#print('Volume: ' + str(Vol))
+
 # Extract time grid details 
 tgrid = extract_time_grid_details(params)
 
@@ -64,6 +71,7 @@ Nz = grid_pts[2]
 system = params['system']['ModelType'] 
 d = params['system']['Dim']
 _CL = params['simulation']['CLnoise']
+
 
 N_spatial = calculate_Nspatial(grid_pts, d)
 T = 1./float(params['system']['beta']) 
@@ -118,6 +126,8 @@ for i, data in enumerate(S_kt[0:N_species]):
   structure_factor_errs = np.zeros_like(Sk_t_unsorted)
   structure_factor_errs += S_kt_errs[i] 
 
+  Sk_t_unsorted *= Vol
+  structure_factor_errs *= Vol
 
   # Perform angular averaging over the k index 
   ''' Plot the angular average''' 
@@ -199,7 +209,7 @@ for i, data in enumerate(S_kt[0:N_species]):
   plt.title(title, fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
   plt.ylabel(ylabel, fontsize = 32, rotation = 0, labelpad = 16) 
-  plt.ylim(0, 50.)
+  plt.ylim(0, 64.)
   plt.colorbar(fraction=0.046, pad=0.04)
   if(saveFigs):
     plt.savefig('dynamical_structure_factor_k_omega.pdf', dpi=300)
