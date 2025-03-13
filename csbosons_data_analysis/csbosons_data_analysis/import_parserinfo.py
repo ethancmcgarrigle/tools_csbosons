@@ -73,6 +73,7 @@ def extract_cell_details(parser, lattice: bool = True) -> list:
           Ly = 1.
       else:
         Ly = 1. 
+        Lz = 1. 
       L_list.append(Lx)
       L_list.append(Ly)
       L_list.append(Lz)
