@@ -102,7 +102,14 @@ def extract_time_grid_details(parser) -> TimeGrid:
   else:
     tmax_key = 'tmax_ns'
 
-  tmax = parser['system'][tmax_key] 
+  try:
+    tmax = parser['system'][tmax_key] 
+  except:
+    if(tmax_key == 'tmax'):
+      tmax = parser['system']['tmax_ns']
+    else:
+      tmax = parser['system']['tmax']
+ 
   Nt = parser['simulation']['nt'] 
   dt = tmax/Nt
 
