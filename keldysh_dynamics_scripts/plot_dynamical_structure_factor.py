@@ -59,7 +59,7 @@ L = extract_cell_details(params, lattice)
 Vol = 1. 
 for i in range(len(L)):
   Vol *= L[i]
-#print('Volume: ' + str(Vol))
+print('Volume: ' + str(Vol))
 
 # Extract time grid details 
 tgrid = extract_time_grid_details(params)
@@ -102,6 +102,7 @@ kz = kgrid[2]
 
 w_grid = tgrid.get_reciprocol_grid()
 
+w_grid *= 0.5
 w_0 = w_grid[0]
 w_max = w_grid[-1]
 assert(w_0 == 0.)
@@ -201,15 +202,14 @@ for i, data in enumerate(S_kt[0:N_species]):
 
   S_kr_omega = np.rot90(S_kr_omega, k = 1) # Rotate by 90 degrees for desired image (origin at bottom left corner)  
   plt.figure(figsize=(6, 6))
-  y_0 = w_0
-  y_max = w_max
   ylabel = r'$\omega$'
   title = r'Dynamical Structure Factor: $S(k, \omega)$'
-  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], y_0, y_max], cmap = map_style)
+  plt.imshow(S_kr_omega.real,  aspect='auto', extent=[kr_plot[0], kr_plot[-1], w_0, w_max], cmap = map_style)
+  plt.plot(kr_plot, kr_plot**2, linestyle = 'solid', color = 'grey', linewidth = 2.)
   plt.title(title, fontsize = 22)
   plt.xlabel('$k$', fontsize = 32) 
   plt.ylabel(ylabel, fontsize = 32, rotation = 0, labelpad = 16) 
-  plt.ylim(0, 64.)
+  plt.ylim(0, 32.)
   plt.colorbar(fraction=0.046, pad=0.04)
   if(saveFigs):
     plt.savefig('dynamical_structure_factor_k_omega.pdf', dpi=300)
