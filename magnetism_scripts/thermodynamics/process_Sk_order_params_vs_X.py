@@ -19,6 +19,7 @@ def extract_Sk_at_wavevector(Sk_data: np.ndarray, k_grid: list[np.ndarray], k: l
     ''' Function to return the unique structure factor value at a desired wavevector, i.e. returns S(k)'''
     ''' Sk_data is a 2D numpy array, first (d) columns are k data'''
     N_gridpoints = len(Sk_data[0])
+    suppress_output = True
 
     # Argmin() is not a great strategy overall and should be used minimally. Instead, find the values in each direction of k_grid closest to the desired ones  
     k_indices = [] # index where an approximate match is found 
@@ -37,9 +38,10 @@ def extract_Sk_at_wavevector(Sk_data: np.ndarray, k_grid: list[np.ndarray], k: l
     match_values_yz = np.where(k_matching[2] == match_values_xy)[0][0]
     assert match_values_xy == match_values_yz, 'Warning, could not locate the unique k wavevector.'
     # sanity check:
-    print('Extracting Sk value at wavevector:')
-    for nu in range(0, 3):
-      print('k' + str(nu) + '  = ' + str(k_grid[nu][match_values_xy]))
+    if(not suppress_output):
+      print('Extracting Sk value at wavevector:')
+      for nu in range(0, 3):
+        print('k' + str(nu) + '  = ' + str(k_grid[nu][match_values_xy]))
 
     return Sk_data[0][match_values_xy] 
 
@@ -175,20 +177,16 @@ def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=Tr
 if __name__ == "__main__":
     # Script gather structure factor data for order parameter analysis 
     # Gather sweep parameter (independent variable) 
- #    T = np.linspace(0.5, 16.0, 20)
- #    T2 = np.linspace(0.1, 1.75, 12)
- #    T = np.append(T, T2)
- #    B = 1./T
- #    B = np.round(B, 7)
- #    B = np.sort(B)
-    J2 = np.linspace(0.0, 0.8, 20)
-    J2 = np.append(J2, np.linspace(0.9, 2.0, 20))
-    J2 = np.round(J2, 4)
-    J2 *= -1.
+    T = np.linspace(0.5, 16.0, 20)
+    T2 = np.linspace(0.1, 1.75, 12)
+    T = np.append(T, T2)
+    B = 1./T
+    B = np.round(B, 7)
+    B = np.sort(B)
 
     input_file = 'input.yml'
     avg_spin_directions = True
-    usingTemperature = False 
+    usingTemperature = True 
 
     if(usingTemperature):
       gather_order_parameters(B, input_file, avg_spin_directions, usingTemperature) 
