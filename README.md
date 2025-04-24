@@ -1,8 +1,10 @@
 ## tools_csbosons: A repository for analyzing the output of coherent states boson C++ simulations. 
-The repository is organized into 1) BEC scripts, 2) magnetism scripts, 3) analytical references, 4) example, 5) python_plot_styles, 6) additional tools, and 7) csbosons_data_analysis.
+The repository is organized into 1) BEC scripts, 2) magnetism scripts, 3) keldysh dynamics scripts, 4) Annihilating Random Walk model scripts, 5) analytical references, 6) example, 7) python_plot_styles, 8) additional tools, and 9) csbosons_data_analysis.
 
 `BEC_scripts` and `magnetism_scripts` contain python scripts that are routinely used for analyzing output data from Bose fluid simulations and spin lattice simulations, respectively.
    Those scripts depend on helper functions in the package csbosons_data_analysis. 
+
+`keldysh_dynamics_scripts` and `ARW_scripts` contain python scripts that are routinely used for analyzing output data from keldysh dynamics simulations for boson models and annihilating random walk models, respectively. Those scripts depend on helper functions in the package csbosons_data_analysis. 
 
 `Analytical references` contains various python scripts for analytical or exact references for physical problems of interest, for helpful benchmarking. For example, there are single spin references and ideal Bose gas reference scripts. 
 
