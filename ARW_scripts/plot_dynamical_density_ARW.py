@@ -51,7 +51,7 @@ def visualize_rho_t(warmup_percentage, savefig):
   num_tpoints = (len(cols) - first_indx)//2
   
   assert(num_tpoints == Nt)
-  real_time = np.linspace(0, tmax, num_tpoints) 
+  real_time = np.linspace(0, tmax, num_tpoints) + dt
   dynamical_partnum = np.zeros(num_tpoints, dtype=np.complex128)
   dynamical_partnum_err = np.zeros(num_tpoints, dtype=np.complex128)
   

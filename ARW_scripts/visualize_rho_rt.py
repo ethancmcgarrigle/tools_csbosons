@@ -59,7 +59,7 @@ def visualize_rho_rt(displayPlots: bool, saveFigure: bool, N_samples_to_plot: in
   x = r_grid[0]
   y = r_grid[1]
   z = r_grid[2]
-  
+
   # Species loop to plot the structure factors 
   for i, data in enumerate(rho_rt[0:N_species]):
     # Create a dictionary for each file, store the grid and necessary data 
@@ -67,15 +67,16 @@ def visualize_rho_rt(displayPlots: bool, saveFigure: bool, N_samples_to_plot: in
   
     # Plot a few snapshots of the density profile 
     # Want to plot the profiles for each sample point in real time  
+    # In this theory, the convention is for tgrid to start at t1 = 0 + dt
     time_points = len(rho_rt[i][0,:])
     N_samples_to_plot += 1  
     if N_samples_to_plot > 1:
       indices = np.linspace(0, time_points-1, N_samples_to_plot).astype(int)
       rho_rt_subarray = rho_rt[i][:, indices]
-      times = tgrid[indices]
+      times = tgrid[indices] + tgrid.return_dt()
     else:
       rho_rt_subarray = rho_rt[i][:, 0]
-      times = tgrid[0]
+      times = tgrid[0] + tgrid.return_dt()
 
     assert(len(rho_rt_subarray[0, :]) == N_samples_to_plot)
     assert(len(rho_rt_subarray[0, :]) == len(times))
