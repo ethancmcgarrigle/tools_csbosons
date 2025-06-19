@@ -69,10 +69,10 @@ kx = kgrid[0]
 ky = kgrid[1]
 kz = kgrid[2]
 
+Sk_list = []
 
 # Species loop to plot the structure factors 
 for i, data in enumerate(Sk[0:N_species]):
-  plt.style.use(style_path_image)
   # Create a dictionary for each file, store the grid and necessary data 
   _data = {'kx': kx, 'ky': ky, 'kz' : kz, 'S_k': Sk[i], 'S_k_errs': Sk_errs[i], 
           'rho_k' : rho_k[i], 'rho_k_errs' : rho_k_errs[i], 'rho_-k' : rho_negk[i], 'rho_-k_errs' : rho_negk_errs[i]}
@@ -97,6 +97,8 @@ for i, data in enumerate(Sk[0:N_species]):
   Sk_sorted = np.flip(Sk_sorted, 0)
 
   # Plot the structure factor  
+  Sk_list.append(Sk_sorted.real)
+  plt.style.use(style_path_image)
   plt.figure(figsize=(6.77166, 6.77166))
   plt.imshow(Sk_sorted.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
   plt.title(r'$S_{' + str(i) + str(i) + '} (\mathbf{k})$', fontsize = 30)
@@ -146,7 +148,36 @@ for i, data in enumerate(Sk[0:N_species]):
 
 
 
+if(N_species > 1):
+  # Plot total S(k) 
+  Sk_total = np.zeros_like(Sk_list[0]) 
+  for i in range(0, N_species): 
+    Sk_total += Sk_list[i] 
 
+  # Plot the structure factor  
+  plt.style.use(style_path_image)
+  plt.figure(figsize=(6.77166, 6.77166))
+  plt.imshow(Sk_total, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
+  plt.title(r'$S_{total}(\mathbf{k})$', fontsize = 30)
+  plt.xlabel('$k_x$', fontsize = 32) 
+  plt.ylabel('$k_y$', fontsize = 32)
+  if('SOC' in system):
+    plt.xlim(-4.*kappa,4.*kappa)
+    plt.ylim(-4.*kappa,4.*kappa)
+  plt.colorbar(fraction=0.046, pad=0.04)
+  #plt.savefig('Sk.eps')
+  plt.show()
 
-# TODO: add off-diagonal and total structure factor 
+  # Plot structure factor in log-scale  
+  plt.figure(figsize=(6.77166, 6.77166))
+  plt.imshow(Sk_total, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
+  plt.title(r'$S_{total}(\mathbf{k})$', fontsize = 30)
+  plt.xlabel('$k_x$', fontsize = 32) 
+  plt.ylabel('$k_y$', fontsize = 32)
+  if('SOC' in system):
+    plt.xlim(-4.*kappa,4.*kappa)
+    plt.ylim(-4.*kappa,4.*kappa)
+  plt.colorbar(fraction=0.046, pad=0.04)
+  #plt.savefig('Sk_log.eps')
+  plt.show()
 
