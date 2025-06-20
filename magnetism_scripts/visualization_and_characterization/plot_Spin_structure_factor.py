@@ -27,7 +27,7 @@ style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_st
 
 
 # TODO Generalize to 1D and 3D 
-def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
+def process_Sk_data(spin_file, N_gridpoints, dim : int = 2, _Langevin : bool = True, continuum : bool = False):
     # Load the data 
     k_grid, Sk_avg, Sk_errs = process_data([spin_file], N_gridpoints, _Langevin, False)
 
@@ -35,7 +35,12 @@ def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
     ky = k_grid[1]
     kz = k_grid[2]
 
-    kx, ky, kz, Sk_avg, Sk_errs = extend_orthorhombic_grid(kx, ky, kz, Sk_avg, Sk_errs)
+
+    if not continuum:
+      kx, ky, kz, Sk_avg, Sk_errs = extend_orthorhombic_grid(kx, ky, kz, Sk_avg, Sk_errs)
+    else:
+      Sk_avg = Sk_avg[0]
+      Sk_errs = Sk_errs[0]
 
     processed_data = {'kx': kx, 'ky': ky, 'kz': kz, 'S(k)': Sk_avg, 'S(k)_errs': Sk_errs} 
 
@@ -45,7 +50,10 @@ def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
     if(lattice == 'square'): # process for later usage of imshow()
       # Redefine numpy array post sorting
       Sk_processed = np.array(d_frame_Sk['S(k)']) 
-      augmentation_factor = int(np.sqrt(int(len(kx) / (Nx * Ny * Nz))))
+      if not continuum:
+        augmentation_factor = int(np.sqrt(int(len(kx) / (Nx * Ny * Nz))))
+      else:
+        augmentation_factor = 1 
       Sk_processed.resize(Nx * augmentation_factor, Ny * augmentation_factor)
       Sk_processed = np.transpose(Sk_processed)
       Sk_processed = np.flip(Sk_processed, 0)
@@ -172,7 +180,7 @@ def plot_BZ_square():
 
 
 
-def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1, basis_sites = 1):
+def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1, basis_sites = 1, latticeModel : bool = True):
     ''' Takes in a list Sk which contains Sk_xx, Sk_yy, Sk_zz (structure factor for each spin direction). 
         - Sk_nu,nu is a list of form [kx, ky, kz, Sk_data] 
         - e.g. Sk_list[0] is the list: [kx, ky, kz, Sk_xx] 
@@ -194,15 +202,15 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
 
       extension_factor = 1.5   # for 1st BZ
 
-
       plt.figure(figsize=(6.77166, 6.77166))
       if(lattice == 'square'):
-        #plot_BZ_square()
-        plot_BZ1()
+        if(latticeModel):
+          plot_BZ1()
         plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
         BZ1_end = np.pi 
-        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        if(latticeModel):
+          plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+          plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
       else:
         # Need to reconstruct the 1st-BZ for visualization 
         BZ1_dict = return_BZ1_points()
@@ -279,7 +287,9 @@ if __name__ == "__main__":
   
   # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
   system = params['system']['ModelType'] 
+  continuum = False 
   if('SOC' in system): 
+    continuum = True 
     lattice = False 
   else:
     lattice = True 
@@ -338,10 +348,10 @@ if __name__ == "__main__":
     # loop over each spin direction 
     for nu in range(0, 3):
       S_file = 'S' + str(dirs[nu]) + '_k_S' + str(dirs[nu]) + '_-k_' + str(K) + '.dat' 
-      Sk_alpha.append(process_Sk_data(S_file, N_spatial, dim, _CL))
+      Sk_alpha.append(process_Sk_data(S_file, N_spatial, dim, _CL, continuum))
     Sk_list.append(Sk_alpha)
 
   for K in range(0, num_basis_sites):
-    plot_structure_factor(Sk_list[K], False, False, K, num_basis_sites) 
+    plot_structure_factor(Sk_list[K], False, False, K, num_basis_sites, not continuum) 
   
 
