@@ -126,16 +126,20 @@ def analyze_spin_data(Sx_file, Sy_file, Sz_file, N_spatial, d, CL, plots):
 
 # Script to load and plot correlation data 
 params = import_parser('input.yml')
+system = params['system']['ModelType'] 
 
 # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
-lattice = True
+if('SOC' in system): 
+  lattice = False 
+else:
+  lattice = True 
+
 grid_pts, d = extract_grid_details(params, lattice) 
 
 Nx = grid_pts[0] 
 Ny = grid_pts[1] 
 Nz = grid_pts[2] 
 
-system = params['system']['ModelType'] 
 d = params['system']['Dim']
 _CL = params['simulation']['CLnoise']
 

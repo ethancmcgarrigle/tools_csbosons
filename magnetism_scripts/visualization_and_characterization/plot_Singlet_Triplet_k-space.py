@@ -27,32 +27,32 @@ style_path = os.path.join(os.path.dirname(package_file), 'plot_styles', 'plot_st
 
 
 # TODO Generalize to 1D and 3D 
-def process_Sk_data(spin_file, N_gridpoints, dim, _Langevin):
+def process_kspace_data(file, N_gridpoints, dim, _Langevin):
     # Load the data 
-    k_grid, Sk_avg, Sk_errs = process_data([spin_file], N_gridpoints, _Langevin, False)
+    k_grid, fk_avg, fk_errs = process_data([file], N_gridpoints, _Langevin, False)
 
     kx = k_grid[0]    
     ky = k_grid[1]
     kz = k_grid[2]
 
-    kx, ky, kz, Sk_avg, Sk_errs = extend_orthorhombic_grid(kx, ky, kz, Sk_avg, Sk_errs)
+    kx, ky, kz, fk_avg, fk_errs = extend_orthorhombic_grid(kx, ky, kz, fk_avg, fk_errs)
 
-    processed_data = {'kx': kx, 'ky': ky, 'kz': kz, 'S(k)': Sk_avg, 'S(k)_errs': Sk_errs} 
+    processed_data = {'kx': kx, 'ky': ky, 'kz': kz, 'f(k)': fk_avg, 'S(k)_errs': fk_errs} 
 
-    d_frame_Sk = pd.DataFrame.from_dict(processed_data)
+    d_frame_fk = pd.DataFrame.from_dict(processed_data)
 
-    d_frame_Sk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
+    d_frame_fk.sort_values(by=['kx', 'ky', 'kz'], ascending = True, inplace=True)
     if(lattice == 'square'): # process for later usage of imshow()
       # Redefine numpy array post sorting
-      Sk_processed = np.array(d_frame_Sk['S(k)']) 
+      fk_processed = np.array(d_frame_fk['f(k)']) 
       augmentation_factor = int(np.sqrt(int(len(kx) / (Nx * Ny * Nz))))
-      Sk_processed.resize(Nx * augmentation_factor, Ny * augmentation_factor)
-      Sk_processed = np.transpose(Sk_processed)
-      Sk_processed = np.flip(Sk_processed, 0)
+      fk_processed.resize(Nx * augmentation_factor, Ny * augmentation_factor)
+      fk_processed = np.transpose(fk_processed)
+      fk_processed = np.flip(fk_processed, 0)
     else:
-      Sk_processed = np.array(d_frame_Sk['S(k)']) 
+      fk_processed = np.array(d_frame_fk['f(k)']) 
 
-    return [np.array(d_frame_Sk['kx']), np.array(d_frame_Sk['ky']), np.array(d_frame_Sk['kz']), Sk_processed]
+    return [np.array(d_frame_fk['kx']), np.array(d_frame_fk['ky']), np.array(d_frame_fk['kz']), fk_processed]
  
 
  
@@ -172,7 +172,7 @@ def plot_BZ_square():
 
 
 
-def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1, basis_sites = 1):
+def plot_kspace_data(data_tmp, save_data, save_plot, basis_site_indx=1, basis_sites = 1):
     ''' Takes in a list Sk which contains Sk_xx, Sk_yy, Sk_zz (structure factor for each spin direction). 
         - Sk_nu,nu is a list of form [kx, ky, kz, Sk_data] 
         - e.g. Sk_list[0] is the list: [kx, ky, kz, Sk_xx] 
@@ -184,89 +184,88 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
     else:
       _LogPlots = True
 
-    for nu in range(0, 3):
-      Sk = Sk_alpha_tmp[nu][3]
-      kx = Sk_alpha_tmp[nu][0]
-      ky = Sk_alpha_tmp[nu][1]
-      kz = Sk_alpha_tmp[nu][2]
+    fk = data_tmp[3]
+    kx = data_tmp[0]
+    ky = data_tmp[1]
+    kz = data_tmp[2]
 
-      file_str = 'Sk_' + dirs[nu] + dirs[nu] + '_' + str(basis_site_indx) 
+    #file_str = 'fk_' + dirs[nu] + dirs[nu] + '_' + str(basis_site_indx) 
 
-      extension_factor = 1.5   # for 1st BZ
+    extension_factor = 1.5   # for 1st BZ
 
 
+    plt.figure(figsize=(6.77166, 6.77166))
+    if(lattice == 'square'):
+      #plot_BZ_square()
+      plot_BZ1()
+      plt.imshow(fk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
+      BZ1_end = np.pi 
+      plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+      plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+    else:
+      # Need to reconstruct the 1st-BZ for visualization 
+      BZ1_dict = return_BZ1_points()
+      # Distance from origin to any of the hexagon's vertices  
+      K_prime_distance = np.linalg.norm(b1)*0.5 / np.cos(np.pi / 6.)
+      BZ1_end = K_prime_distance
+      # Plot the hexagon depicting the first Brillouin Zone 
+      plot_BZ1(BZ1_dict)
+      # Plot the structure factor 
+      triangles = tri.Triangulation(kx, ky)
+      plt.tricontourf(triangles, fk.real, cmap = 'inferno', levels = 200, zorder=1) 
+
+      # Plot the domain (kx, ky) \in [-1.25BZ, 1.25BZ]
+      plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+      plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+      #plt.scatter(kx, ky, Sk.real)
+
+ #    if(basis_sites > 1):
+ #      plt.title(r'$S^{' + basis_site_labels[basis_site_indx] + '}_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
+ #    else:
+ #      plt.title(r'$S_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
+    plt.xlabel('$k_{x}$', fontsize = 32)
+    plt.ylabel('$k_{y}$', fontsize = 32)
+ #    # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
+    plt.colorbar(fraction=0.046, pad=0.04)
+    if(save_plot):
+      plt.savefig(file_str + '.eps', dpi=300)
+      plt.savefig(file_str + '.pdf', dpi=300)
+    plt.show()
+
+    if(save_data): 
+      np.savetxt(file_str + '_figure.dat', Sk.real)
+    
+    # -------- Plot on a log scale------- 
+    if(_LogPlots):
       plt.figure(figsize=(6.77166, 6.77166))
+ #      if(basis_sites > 1):
+ #        plt.title(r'$S^{' + basis_site_labels[basis_site_indx] + '}_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
+ #      else:
+ #        plt.title(r'$S_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
+  
       if(lattice == 'square'):
-        #plot_BZ_square()
-        plot_BZ1()
-        plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)]) 
+        plt.imshow(fk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
         BZ1_end = np.pi 
         plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
       else:
         # Need to reconstruct the 1st-BZ for visualization 
         BZ1_dict = return_BZ1_points()
-        # Distance from origin to any of the hexagon's vertices  
-        K_prime_distance = np.linalg.norm(b1)*0.5 / np.cos(np.pi / 6.)
-        BZ1_end = K_prime_distance
-        # Plot the hexagon depicting the first Brillouin Zone 
+        # Plot the hexagonal depicting the first Brillouin Zone 
         plot_BZ1(BZ1_dict)
-        # Plot the structure factor 
         triangles = tri.Triangulation(kx, ky)
-        plt.tricontourf(triangles, Sk.real, cmap = 'inferno', levels = 200, zorder=1) 
-
-        # Plot the domain (kx, ky) \in [-1.25BZ, 1.25BZ]
-        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        #plt.scatter(kx, ky, Sk.real)
-
-      if(basis_sites > 1):
-        plt.title(r'$S^{' + basis_site_labels[basis_site_indx] + '}_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
-      else:
-        plt.title(r'$S_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
+        plt.tricontourf(triangles, fk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
+        #extend_plot(kx, ky, kz, Sk, False)
+      plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+      plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
       plt.xlabel('$k_{x}$', fontsize = 32)
       plt.ylabel('$k_{y}$', fontsize = 32)
- #      # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
+      # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
       plt.colorbar(fraction=0.046, pad=0.04)
       if(save_plot):
-        plt.savefig(file_str + '.eps', dpi=300)
-        plt.savefig(file_str + '.pdf', dpi=300)
+        plt.savefig(file_str + '_log.eps', dpi=300)
+        plt.savefig(file_str + '_log.pdf', dpi=300)
       plt.show()
-
-      if(save_data): 
-        np.savetxt(file_str + '_figure.dat', Sk.real)
-      
-      # -------- Plot on a log scale------- 
-      if(_LogPlots):
-        plt.figure(figsize=(6.77166, 6.77166))
-        if(basis_sites > 1):
-          plt.title(r'$S^{' + basis_site_labels[basis_site_indx] + '}_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
-        else:
-          plt.title(r'$S_{' + dirs[nu] + dirs[nu] + '} (\mathbf{k})$', fontsize = 30)
-  
-        if(lattice == 'square'):
-          plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
-          BZ1_end = np.pi 
-          plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-          plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        else:
-          # Need to reconstruct the 1st-BZ for visualization 
-          BZ1_dict = return_BZ1_points()
-          # Plot the hexagonal depicting the first Brillouin Zone 
-          plot_BZ1(BZ1_dict)
-          triangles = tri.Triangulation(kx, ky)
-          plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
-          #extend_plot(kx, ky, kz, Sk, False)
-        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        plt.xlabel('$k_{x}$', fontsize = 32)
-        plt.ylabel('$k_{y}$', fontsize = 32)
-        # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
-        plt.colorbar(fraction=0.046, pad=0.04)
-        if(save_plot):
-          plt.savefig(file_str + '_log.eps', dpi=300)
-          plt.savefig(file_str + '_log.pdf', dpi=300)
-        plt.show()
 
 
 
@@ -278,11 +277,7 @@ if __name__ == "__main__":
   params = import_parser('input.yml')
   
   # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
-  system = params['system']['ModelType'] 
-  if('SOC' in system): 
-    lattice = False 
-  else:
-    lattice = True 
+  lattice = True
   grid_pts, dim = extract_grid_details(params, lattice) 
   N_spatial = calculate_Nspatial(grid_pts, dim)
   
@@ -290,17 +285,13 @@ if __name__ == "__main__":
   Ny = grid_pts[1] 
   Nz = grid_pts[2] 
   
+  system = params['system']['ModelType'] 
   _CL = params['simulation']['CLnoise']
   
   # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
   T = float(params['system']['beta'])
   T = 1./T
-  try:
-    lattice = params['system']['lattice']
-  except:
-    print('Lattice keyword not found. Assuming continuum model on orthorhombic grid')
-    lattice = 'square'
-
+  lattice = params['system']['lattice'] 
   ntau = params['system']['ntau'] 
   _isPlotting = True
   
@@ -331,17 +322,15 @@ if __name__ == "__main__":
     b3 = b1 + b2
     b4 = b1 - b2
 
-  Sk_list = [] # list of length sublattice basis sites (2 for honeycomb) 
-  # Main loop to process the correlation data for each sublattice and each spin
-  for K in range(0, num_basis_sites):
-    Sk_alpha = []
-    # loop over each spin direction 
-    for nu in range(0, 3):
-      S_file = 'S' + str(dirs[nu]) + '_k_S' + str(dirs[nu]) + '_-k_' + str(K) + '.dat' 
-      Sk_alpha.append(process_Sk_data(S_file, N_spatial, dim, _CL))
-    Sk_list.append(Sk_alpha)
+  fileNames = ['Singlet_OP.dat', 'Triplet_OP.dat']
+  
+  OP_list = [] # list of length sublattice basis sites (2 for honeycomb) 
 
-  for K in range(0, num_basis_sites):
-    plot_structure_factor(Sk_list[K], False, False, K, num_basis_sites) 
+  # Main loop to process the correlation data for each sublattice and each spin
+  for f in fileNames:
+    OP_list.append(process_kspace_data(f, N_spatial, dim, _CL))
+
+  for O in OP_list: 
+    plot_kspace_data(O, False, False, 0, num_basis_sites) 
   
 
