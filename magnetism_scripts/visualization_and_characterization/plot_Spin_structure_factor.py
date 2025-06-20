@@ -192,6 +192,10 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
     else:
       _LogPlots = True
 
+    # Override for continuum models 
+    if(not latticeModel):
+      _LogPlots = True
+
     for nu in range(0, 3):
       Sk = Sk_alpha_tmp[nu][3]
       kx = Sk_alpha_tmp[nu][0]
@@ -255,8 +259,9 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
         if(lattice == 'square'):
           plt.imshow(Sk.real, cmap = 'inferno', interpolation='none', extent=[np.min(kx) ,np.max(kx) ,np.min(ky),np.max(ky)], norm=LogNorm()) 
           BZ1_end = np.pi 
-          plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-          plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+          if(latticeModel):
+            plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+            plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         else:
           # Need to reconstruct the 1st-BZ for visualization 
           BZ1_dict = return_BZ1_points()
@@ -265,8 +270,9 @@ def plot_structure_factor(Sk_alpha_tmp, save_data, save_plot, basis_site_indx=1,
           triangles = tri.Triangulation(kx, ky)
           plt.tricontourf(triangles, Sk.real, cmap = 'inferno', norm=LogNorm(), levels = 100) 
           #extend_plot(kx, ky, kz, Sk, False)
-        plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
-        plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+        if(latticeModel):
+          plt.xlim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
+          plt.ylim(-BZ1_end * extension_factor, BZ1_end * extension_factor)
         plt.xlabel('$k_{x}$', fontsize = 32)
         plt.ylabel('$k_{y}$', fontsize = 32)
         # plt.zlabel('real part', fontsize = 20, fontweight = 'bold')
