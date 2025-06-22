@@ -236,6 +236,7 @@ if __name__ == "__main__":
     Nx = params['simulation']['Nx'] 
     Ny = params['simulation']['Ny'] 
     Nz = params['simulation']['Nz'] 
+    mass = params['system']['mass'] 
     lengths = [Lx]
     gridpoints = [Nx]
     if d > 1 :
@@ -251,7 +252,7 @@ if __name__ == "__main__":
 
   lamb = 1.  
 
-  if('KELDYSH' or 'keldysh' in model):
+  if(('KELDYSH' in model) or ('keldysh' in model)):
     # Extract time grid details
     try:
       tgrid = extract_time_grid_details(params)
@@ -298,15 +299,15 @@ if __name__ == "__main__":
  #      plt.savefig('S_kr_t.pdf', dpi=300)
  #    plt.show()
 
-
-
-  #k2map_data = np.loadtxt('k2map.dat')
-  #k2_data = k2map_data[:,2]
   k2_data = output_k2grid(lengths, gridpoints)
 
   E = 0.
   S = 0.
   N_check = 0.
+  if(not dimensionless and mass == 4.0026):
+    lamb = 6.0596534037
+    
+
 
   E_k = k2_data * lamb
   N_k = N_B_Eq(E_k, beta, mu)
