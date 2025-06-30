@@ -40,7 +40,7 @@ def calc_orientational_order_parameter(points, triangulation, _isPlotting, symme
     #symmetry_int = 6
     psi_M_vals = np.zeros(len(points), dtype=np.complex_) 
 
-    if(symmetry_int in [4,8]):
+    if(symmetry_int == 4):
       # Create a KDTree from the transformed points
       tree = KDTree(points)
 
@@ -53,7 +53,9 @@ def calc_orientational_order_parameter(points, triangulation, _isPlotting, symme
         neighbors = np.unique(triangulation.simplices[indptr])
         #neighbors = vor.ridge_points[vor.points_region[idx] == vor.ridge_points].flatten()
         neighbors = neighbors[neighbors != idx]
-      elif symmetry_int == 4:
+      else: # M == 4 
+        assert symmetry_int == 4, 'Abort. This assumes M = 4 square symmetry' 
+ 
         # Query the tree for the 5 nearest neighbors of each point (the first one is the point itself)
         distances, indices = tree.query(point, k=5)
  
@@ -63,23 +65,6 @@ def calc_orientational_order_parameter(points, triangulation, _isPlotting, symme
         #print(nearest_neighbors_indx)
         # Optionally, convert indices to actual coordinates
         #neighbors = [points[idx] for idx in nearest_neighbors_indx]
-      elif symmetry_int == 8:
-        # For octagonal QC, typically need 8 nearest neighbors
-        # But QCs have two characteristic length scales
-        distances, indices = tree.query(point, k=13)  # Get more candidates
-        # Filter neighbors by distance to handle the two length scales
-        neighbors = []
-        for i in range(1, len(indices)):
-          neighbor_idx = indices[i]
-          dist = distances[i]
-          # For octagonal QC, accept neighbors within reasonable cutoff
-          # Typical ratio of length scales is ~1.3-1.4 (related to silver ratio)
-          if dist < 1.5 * lattice_constant:
-              neighbors.append(neighbor_idx)
-          if len(neighbors) >= 8:  # Stop after finding 8 neighbors
-              break
-        neighbors = np.array(neighbors)
-
     
       # Calculate angles between the points 
       weights = []
@@ -89,11 +74,6 @@ def calc_orientational_order_parameter(points, triangulation, _isPlotting, symme
           distance = np.sqrt(dx**2 + dy**2)
           if(distance < np.sqrt(2.) * lattice_constant * 0.95):
             angle = cmath.phase(complex(dx,dy))
-            weights.append(np.exp(1j * symmetry_int * angle))
-        elif(symmetry_int == 8):
-          # For octagonal QC, include neighbors up to second shell
-          if distance < 1.5 * lattice_constant:
-            angle = cmath.phase(complex(dx, dy))
             weights.append(np.exp(1j * symmetry_int * angle))
         else:
           angle = cmath.phase(complex(dx, dy))
@@ -107,12 +87,12 @@ def calc_orientational_order_parameter(points, triangulation, _isPlotting, symme
     pcnt = 0.15
     start_indx = int(pcnt*len(points))
     end_indx = int((1.- pcnt)*len(points))
-    psi_M_vals = psi_M_vals[start_indx:end_indx]
+    psi_M_vals = psi_M_vals[start_indx:end_indx] # psi_{M}(r)
  
     if(_isPlotting):
       plot_psi6(psi_M_vals, symmetry_int)     
 
-    return psi_M_vals, np.abs(np.mean(psi_M_vals))
+    return psi_M_vals, (np.abs(np.mean(psi_M_vals))**2.)  # psi(r), |1/N \sum_{r} psi(r)|^2
 
 
 
@@ -159,6 +139,8 @@ def process_sample(x_grid, y_grid, Nx, Ny, sample):
     # Find regions of high density to denote "centers"
     # 2.4 is a good number 
     num_stds = 1.85
+    #num_stds = 1.25
+    #num_stds = 1.35
     threshold_val = avg_rho + num_stds * np.std(density_up.real)
     binary_array = density_up.real > threshold_val
     
@@ -238,7 +220,7 @@ def calc_correlation_fxn_G6(psi_6, _isPlotting, M):
     #psi_6 = calc_orientational_order_parameter(transformed_points, tri) 
     # Calculate the correlation functions 
     psi_6_star = np.conj(psi_6)
-    
+
     # FFT both, one to k, one to -k 
     psi_6_k = scipy.fft.fft(psi_6)
     # To get psi_6 fft from r to neg k, pretend we're in k space and use the ifft function, but balance the scaling factor 
@@ -264,7 +246,7 @@ def plot_psi6(psi_6, M):
     #plt.plot(range(0, len(psi_6)), psi_6.real, marker='o', color = 'b')
     plt.plot(range(0, len(psi_6)), np.abs(psi_6), marker='o', color = 'b')
     plt.xlabel('$|r|$', fontsize = 20)
-    plt.ylabel('$\psi_{' + str(M) + '}$', fontsize = 20)
+    plt.ylabel('$|\psi_{' + str(M) + '}|$', fontsize = 20)
     plt.show()
 
 
@@ -279,9 +261,11 @@ def exp_decay(x, A, L):
 def extract_decay_parameter(G):
     ''' Function to extract the decay parameter. Returns whether exponential or power law worked best'''
     q1_indx = 0 
+    q1_indx = int(len(G)/6) 
     q2_indx = int(len(G)/2) - 1 
     r_coords = np.array(range(0, int(len(G))))
     r_coords = r_coords[q1_indx:q2_indx] + 1E-2
+    #r_coords = r_coords[q1_indx:q2_indx] 
 
     fit_opts = ['power law', 'exponential']
     MSE_fits = []
@@ -319,7 +303,10 @@ def fit_function_decay(F, x, fit):
         pcov = np.array([1., 1.])
         decay_param = np.nan 
         decay_param_err = np.nan 
-      MSE = mean_squared_error(power_law(x, *props), F.real)
+      try:
+        MSE = mean_squared_error(power_law(x, *props), F.real)
+      except: 
+        MSE = np.nan 
     else:
       #print('Fitting with ' + fit) #Dbg
       p0 = [0.5, 1.] # this is an initial guess
@@ -334,31 +321,50 @@ def fit_function_decay(F, x, fit):
 
 
 def plot_G6(G_6, M):
+    kappa = 16
+    area = 204.84143616157473  
+    lengthscale = 4. * np.pi / np.sqrt(3.) / kappa
     plt.style.use(data_style_path)
     plt.figure(figsize=(6,6))
     #plt.plot(range(0, int(len(G_6)/2)), G_6.real/np.max(G_6.real), marker='o', color='b')
-    plt.plot(range(0, int(len(G_6)/2)), G_6[0:int(len(G_6)/2)].real/np.max(G_6.real), marker='o', color='b')
+    plt.plot(np.array(range(0, int(len(G_6)/2)))*lengthscale, G_6[0:int(len(G_6)/2)].real/np.max(G_6.real), marker='o', color='b')
     plt.xlabel('$|r|$', fontsize = 24)
     plt.ylabel('$G_{' + str(M) + '}$', fontsize = 24)
+    plt.ylim(-0.05, 1.1)
+    plt.show()
+
+    plt.figure(figsize=(6,6))
+    #plt.plot(range(0, int(len(G_6)/2)), G_6.real/np.max(G_6.real), marker='o', color='b')
+    plt.plot(np.array(range(0, int(len(G_6)/2)))*lengthscale, G_6[0:int(len(G_6)/2)].real/np.max(G_6.real), marker='o', color='b')
+    plt.xlabel('$|r|$', fontsize = 24)
+    plt.ylabel('$G_{' + str(M) + '}$', fontsize = 24)
+    plt.xlim(1., int(len(G_6)/2))
+    plt.ylim(0.001, 10.)
+    plt.xscale('log')
+    plt.yscale('log')
     plt.show()
     
     # get the large r decay exponent via a linear fit 
     # use 2nd quarter of the G6(r) data (1st quarter is too short ranged, 3rd and 4th quarters are periodic images of 1st and 2nd)
     G_6 /= np.max(G_6.real)
-    q1_indx = 0 
+    q1_indx = int(len(G_6)/6) 
     q2_indx = int(len(G_6)/2) - 1 
-    r_coords = np.array(range(0, int(len(G_6))))
+    r_coords = np.array(range(0, int(len(G_6))))*lengthscale
     r_coords = r_coords[q1_indx:q2_indx]
 
-    _powerLaw = True
-    #X = np.linspace(r_coords[0], r_coords[-1], 1000)
+    _powerLaw = True 
+    X = np.linspace(r_coords[0], r_coords[-1], 1000)
     fit_opts = ['power law', 'exponential']
     plt.figure(figsize=(6,6))
-    plt.plot(range(0, int(len(G_6)/2)), G_6[0:int(len(G_6)/2)].real, marker='o', color='b', label='data')
+    plt.plot(range(0, int(len(G_6)/2))*lengthscale, G_6[0:int(len(G_6)/2)].real, marker='o', color='b', label='data')
     plt.plot(r_coords, r_coords**(-1/4), linewidth = 1,  color='r', linestyle = 'dashed', label = '$\eta_{' + str(M) + '} = 1/4$') # avoid divison by zero 
     if(_powerLaw):
-      plt.plot(X, Y, linewidth = 1,  color='k', linestyle = 'dashed', label = '$\eta_{' + str(M) + '} = ' + str(np.round(-props[1], 5)) + '$ fit') 
+      props, pcov = curve_fit(power_law, r_coords, G_6[q1_indx:q2_indx], [1.0, 1.0], method='lm')
+      Y = power_law(X, *props)
+      plt.plot(X, Y, linewidth = 1,  color='k', linestyle = 'dashed', label = '$\eta_{' + str(M) + '} = ' + str(np.round(props[1], 4)) + '$ fit') 
     else:
+      props, pcov = curve_fit(exp_decay, r_coords, G_6[q1_indx:q2_indx], [1.0, 1.0], method='lm')
+      Y = exp_decay(X, *props)
       plt.plot(X, Y, linewidth = 1,  color='k', linestyle = 'dashed', label = 'exp decay: $L = ' + str(np.round(props[1], 3)) + '$') 
     #plt.plot(r_coords[1:], np.exp(fit[1])*r_coords[1:]**(eta_6), linewidth = 2,  color='k', label = '$\eta_{6} = ' + str(np.round(eta_6, 3)) + '$ fit') # avoid divison by zero 
     #plt.plot(r_coords, G_6[q1_indx:q2_indx].real, linewidth = 2,  color='k', label = '$\eta_{6} = ' + str(np.round(eta_6, 2)) + '$ fit') # avoid divison by zero 
@@ -391,7 +397,7 @@ def plot_GT(G_T):
     _powerLaw = True
     X = np.linspace(r_coords[0], r_coords[-1], 1000)
     if(_powerLaw):
-      p0 = [0.5, 0.1, -0.5] # this is an initial guess
+      p0 = [0.5, 0.1] # this is an initial guess
       #p0 = [0.5, 0.1] # this is an initial guess
       props, pcov = curve_fit(power_law, r_coords, G_T[q1_indx:q2_indx], p0, method='lm')
       Y = power_law(X, *props)
@@ -469,8 +475,8 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
     a = np.pi * np.sqrt(2.) / kappa
 
     # Perform analysis for several symmetry numbers: 4, 6, and 8 
-    M_list = np.array([4, 6]) # TODO expand for M == 8
-    #M_list = np.array([6]) # TODO expand for M == 8
+    #M_list = np.array([4, 6]) # TODO expand for M == 8
+    M_list = np.array([6]) # TODO expand for M == 8
  
     dx = Lx / Nx
     dy = Ly / Ny
@@ -511,8 +517,6 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
       # optional phase shift
       if(symmetry_number == 4):
         phase_shift = np.pi/4.
-      elif symmetry_number == 8:
-        phase_shift = np.pi/8.
       else:
         phase_shift = 0. 
       theta = np.array(range(0,symmetry_number)) * 2. * np.pi / symmetry_number
@@ -525,8 +529,6 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
       else:  # component density varies like wavevector k = 2kappa
         if(symmetry_number == 4):
           factor = np.sqrt(2.) 
-        elif(symmetry_number == 8):
-          factor = 2. + np.sqrt(2.) 
         else:
           factor = 1.
         qx = kappa * factor *np.cos(theta)
@@ -536,7 +538,8 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
         print(qx)
         print(qy)
       
-      if(N_samples == 1 and not _CLNoise):
+      #if(N_samples == 1 and not _CLNoise):
+      if(N_samples == 1): 
         # Format the sample 
         processed_sample, points, transformed_points = process_sample(x, y, Nx, Ny, rho_vector) # outputs density field now in 2D array 
       
@@ -562,19 +565,33 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
         for i, q in enumerate(qx):
           psi_T_overall += np.abs(np.mean(psi_T[i, :]) )/len(qx) # divide by length for a mean across the diff'nt major reciprocol vectors   
   
-        if(not _suppress_output):
-          print('Overall translational order parameter: ' + str(psi_T_overall)) 
+        #if(not _suppress_output):
+        #print(psi_6)
+        print('Overall orientational order parameter: (M = ' + str(symmetry_number) + ') :' + str(psi_6_spatial_avg)) 
+        print('Overall translational order parameter: (M = ' + str(symmetry_number) + '): ' + str(psi_T_overall)) 
    
         # Calculate the correlation fxn 
-        calc_correlation_fxn_G6(psi_6, True, symmetry_number)
+        G_M = calc_correlation_fxn_G6(psi_6, True, symmetry_number)
+        np.savetxt('G' + str(symmetry_number) + '.dat', G_M.real)
+        if(np.max(G_M) == 0.):
+          print('No correlations, skipping G_M correlation analysis')
+        else:
+          eta_M, eta_M_err, fit_str = extract_decay_parameter(G_M)
+          print('Orientational order decay exponent: (M = ' + str(symmetry_number) + '): ' + str(np.round(eta_M, 3)) + ' +/- ' + str(np.round(eta_M_err, 3) ) )
   
         # Calculate the correlation fxn 
-        calc_correlation_fxn_GT(psi_T, True)
+        G_T = calc_correlation_fxn_GT(psi_T, False)
+        if(np.max(G_T) == 0.):
+          print('No correlations, skipping G_M correlation analysis')
+        else:
+          eta_T, eta_T_err, fit_str = extract_decay_parameter(G_T)
+          print('Positional order decay exponent (M = ' + str(symmetry_number) + '): ' + str(np.round(eta_T, 3)) + ' +/- ' + str(np.round(eta_T_err, 3) ) )
       
       else: # Langevin simulation #
         # Split the samples to calculate the orientational OP and correlation fxn for each sample  
         # Get the first sample we would like to use. We are cutting off all samples prior 
         sample_num = int((1. - pcnt_avg)*N_samples) # exclude this amount  
+        #print('Considering samples ' + int(sample_num) + ' through ' + str(N_samples)) 
         print('Starting at sample # ' + str(sample_num) + '')
         print('Using ' + str(N_samples - sample_num) + ' samples')
         rho_vector = np.split(density_samples, N_samples)
@@ -600,7 +617,7 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
           tri = Delaunay(transformed_points)
         
           # plot the image 
-          _plot = False 
+          _plot = True 
           if(_plot):
             plot_image(processed_sample, transformed_points, x, y, vor)
        
@@ -623,10 +640,22 @@ def do_analysis(density_file, pcnt_avg, input_file, _plot_time_series, outdir, _
           # Calculate the correlation fxn, suppress plotting if we are working with many images  
           #if(symmetry_number == specified_symmetry_number):
           G_6 = calc_correlation_fxn_G6(psi_6, _plot, symmetry_number)
-          eta_M, eta_M_err, fit_str = extract_decay_parameter(G_6)
+          np.savetxt('G' + str(symmetry_number) + '.dat', G_6.real)
+          if(np.max(G_6) == 0.):
+            print('No correlations, skipping G_M correlation analysis')
+            eta_M = np.nan
+            eta_M_err = np.nan
+          else:
+            eta_M, eta_M_err, fit_str = extract_decay_parameter(G_6)
           G_6_samples.append(G_6)
+
           G_T = calc_correlation_fxn_GT(psi_T, _plot)
-          eta_T, eta_T_err, fit_str = extract_decay_parameter(G_T)
+          if(np.max(G_T) == 0.):
+            print('No correlations, skipping G_M correlation analysis')
+            eta_T = np.nan
+            eta_T_err = np.nan
+          else:
+            eta_T, eta_T_err, fit_str = extract_decay_parameter(G_T)
           G_T_samples.append(G_T)
           # Compute the decay coefficient 
           eta_M_samples.append(eta_M)
