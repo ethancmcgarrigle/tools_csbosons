@@ -4,16 +4,8 @@ import subprocess
 import os
 import re
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
 import pdb
 import yaml
-import math
-## This function runs statistics on the runs accessed (i.e. parameter sweep). Then it collects the relevant data and plots it at the end
-
-def sech(x):
-  return 1/(np.cosh(x))
 
 L = np.arange(2, 100, 2)
 

@@ -1,5 +1,5 @@
 import csv
-from mpmath import *
+#from mpmath import *
 import subprocess
 import os
 import re
@@ -48,14 +48,15 @@ def extract_Sk_at_wavevector(Sk_data: np.ndarray, k_grid: list[np.ndarray], k: l
 
 
 
-def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=True): 
+def gather_order_parameters(X, input_file, X_is_beta=True): 
 
   with open(input_file) as infile:
     master_params = yaml.load(infile, Loader=yaml.FullLoader)
 
+  subtract_terms = True 
+
   # For each independent variable (e.g. temperature) extract the structure factor at appropriate k points; print a file with the value
   # Boolean to take average over all 3 spin directions' structure factors 
-  print('Averaging over each spin direction? '  + str(avg_spin_direction) )
   
   # T S(pi, pi) S(0, pi) + errs?  
   if(X_is_beta):
@@ -63,10 +64,7 @@ def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=Tr
   else:
     X_str = 'J2/J1'
 
-  if(avg_spin_direction):
-    head_str = X_str + ' S(pi, pi) S(0, pi) S(pi,pi)_err S(0, pi)_err'
-  else:
-    head_str = X_str + ' Sx(pi, pi) Sy(pi, pi) Sz(pi, pi) Sx(0, pi) Sy(0, pi) Sz(0, pi) Sx(pi,pi)err Sy(pi,pi)err Sz(pi,pi)err Sx(0, pi)err Sy(0,pi)err Sz(0,pi)err' 
+  head_str = X_str + ' Dx Dy Dx_err Dy_err'
   
   # Get the reference parameters for these sweeps, i.e. the constant parameters kept throughout the runs (tau, v, etc.)
   Nx = master_params['system']['NSitesPer-x']
@@ -90,34 +88,26 @@ def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=Tr
       Nspins *= Nz 
   
   if(X_is_beta):
-    fname = str(Nspins) + '_J2J1_' + str(ratio) + '.dat'
+    fname = 'Dimer_' + str(Nspins) + '_J2J1_' + str(ratio) + '.dat'
   else:
-    fname = str(Nspins) + '_beta_' + str(B) + '.dat'
+    fname = 'Dimer_' + str(Nspins) + '_beta_' + str(B) + '.dat'
   
   # Allocate data 
-  if(avg_spin_direction):
-    S_pi_pi = np.zeros_like(X)
-    S_pi_0 = np.zeros_like(X)
-    S_pi_pi_err = np.zeros_like(X)
-    S_pi_0_err = np.zeros_like(X)
-  else:
-    S_pi_pi = []
-    S_pi_0 = []
-    S_pi_pi_err = []
-    S_pi_0_err = []
-    for nu in range(0, 3):
-      S_pi_pi.append(np.zeros_like(X))
-      S_pi_0.append(np.zeros_like(X))
-      S_pi_pi_err.append(np.zeros_like(X))
-      S_pi_0_err.append(np.zeros_like(X))
+  Dx = np.zeros_like(X)
+  Dy = np.zeros_like(X)
+  Dx_err = np.zeros_like(X)
+  Dy_err = np.zeros_like(X)
   
   # loop over each spin direction for file name  
-  Sk_files = [] 
-  dirs = {0 : 'x', 1 : 'y', 2 : 'z'}
+  Dk_negk_files = [] 
+  Dk_files = [] 
+  Dnegk_files = [] 
+  dirs = {0 : 'x', 1 : 'y'} 
   
-  K = 0 # only 1 basis site # TODO: extend to multiple basis sites (e.g. honeycomb lattice )
-  for nu in range(0, 3):
-    Sk_files.append('S' + str(dirs[nu]) + '_k_S' + str(dirs[nu]) + '_-k_' + str(K) + '.dat') 
+  for nu in range(2):
+    Dk_negk_files.append('Dimer_' + dirs[nu] + dirs[nu] + '_k_-k.dat') 
+    Dk_files.append('Dimer_' + dirs[nu] + '_k.dat') 
+    Dnegk_files.append('Dimer_' + dirs[nu] + '_-k.dat') 
   
   runtime_cutoff = 50.0
   
@@ -138,61 +128,66 @@ def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=Tr
     if(runtime < runtime_cutoff):
       print('Not enough runtime. Setting observables to nan')
       if(avg_spin_direction):
-        S_pi_pi[i] = np.nan
-        S_pi_0[i] = np.nan
-        S_pi_pi_err[i] = np.nan
-        S_pi_0_err[i] = np.nan
-      else:
-        for nu in range(0, 3):
-          S_pi_pi[i][nu] = np.nan
-          S_pi_0[i][nu] = np.nan
-          S_pi_pi_err[i][nu] = np.nan
-          S_pi_0_err[i][nu] = np.nan
+        Dx[i] = np.nan
+        Dy[i] = np.nan
+        Dx_err[i] = np.nan
+        Dy_err[i] = np.nan
     else:
-      print('Extracting structure factor data')
+      print('Extracting dimer structure factor data')
       os.chdir(inner_path)
-      for nu, spin_file in enumerate(Sk_files):
+      # Doing correlators first 
+      for nu, dimer_file in enumerate(Dk_negk_files):
         #Sk_data = np.loadtxt(inner_path + "/" + Sk_files[nu], unpack=True)
         # Load data and extract k grid 
-        k_grid, Sk_avg, Sk_errs = process_data([spin_file], Nspins, True, False)
+        k_grid, Dk_avg, Dk_errs = process_data([dimer_file], Nspins, True, False)
 
         # Estimate error from imaginary parts 
         err = 0. 
 
         # Find pi,pi contribution
-        S_pi_pi_tmp = extract_Sk_at_wavevector(Sk_avg, k_grid, [np.pi, np.pi, 0.]) 
-        S_pi_0_tmp = extract_Sk_at_wavevector(Sk_avg, k_grid, [np.pi, 0., 0.]) 
-        S_pi_0_tmp += extract_Sk_at_wavevector(Sk_avg, k_grid, [0., np.pi, 0.]) 
-
-        S_pi_pi_tmp_err = np.abs(S_pi_pi_tmp.imag)
-        S_pi_0_tmp_err = np.abs(S_pi_0_tmp.imag)**2 
-        S_pi_0_tmp_err += np.abs(S_pi_0_tmp.imag)**2 
-        S_pi_0_tmp_err = np.sqrt(S_pi_0_tmp_err)
-        
-        if(avg_spin_direction):
-          S_pi_pi[i] += S_pi_pi_tmp/3.
-          S_pi_0[i] += S_pi_0_tmp/3.
-          S_pi_pi_err[i] += S_pi_pi_tmp_err/3.
-          S_pi_0_err[i] += S_pi_0_tmp_err/3.
+        if(nu == 0):
+          tmp = 0. + 1j*0.
+          tmp += extract_Sk_at_wavevector(Dk_avg, k_grid, [np.pi, 0., 0.])  # Dx peak at k = (pi, 0)
+          Dx[i] += tmp.real
+          Dx_err[i] = np.abs(tmp.imag)
         else:
-          S_pi_pi[nu][i] = S_pi_pi_tmp
-          S_pi_0[nu][i] = S_pi_0_tmp
-          S_pi_pi_err[nu][i] = S_pi_pi_tmp_err
-          S_pi_0_err[nu][i] = S_pi_0_tmp_err*0.5
-  
+          tmp = 0. + 1j*0.
+          tmp += extract_Sk_at_wavevector(Dk_avg, k_grid, [0, np.pi, 0.])  # Dy peak at k = (0, pi)
+          Dy[i] += tmp.real
+          Dy_err[i] = np.abs(tmp.imag)
+
+      # Doing subtraction part  
+      for nu in range(2):
+        # import +k part 
+        k_grid, Dk_nu_avg, Dk_nu_errs = process_data([Dk_files[nu]], Nspins, True, False ) 
+        if(nu == 0):
+          tmp_k = 0. + 1j*0.
+          tmp_k += extract_Sk_at_wavevector(Dk_nu_avg, k_grid, [np.pi, 0., 0.])  # Dx peak at k = (pi, 0)
+        else:
+          tmp_k = 0. + 1j*0.
+          tmp_k += extract_Sk_at_wavevector(Dk_nu_avg, k_grid, [0., np.pi, 0.])  # Dx peak at k = (pi, 0)
+
+        k_grid, Dnegk_nu_avg, Dnegk_nu_errs = process_data([Dnegk_files[nu]], Nspins, True, False ) 
+        if(nu == 0):
+          tmp_negk = 0. + 1j*0.
+          tmp_negk += extract_Sk_at_wavevector(Dnegk_nu_avg, k_grid, [np.pi, 0., 0.])  # Dx peak at k = (pi, 0)
+        else:
+          tmp_negk = 0. + 1j*0.
+          tmp_negk += extract_Sk_at_wavevector(Dnegk_nu_avg, k_grid, [0., np.pi, 0.])  # Dx peak at k = (pi, 0)
+
+        if(subtract_terms):
+          if(nu == 0):
+            Dx[i] -= tmp_k*tmp_negk
+          else:
+            Dy[i] -= tmp_k*tmp_negk
+
       os.chdir('../')
   
   # Finally save all the data to text file, column layout 
   if(X_is_beta):
-    if(avg_spin_direction):
-      np.savetxt(fname, np.column_stack([1./B, S_pi_pi, S_pi_0, S_pi_pi_err, S_pi_0_err]), header = head_str)
-    else: 
-      np.savetxt(fname, np.column_stack([1./B, *S_pi_pi, *S_pi_0, *S_pi_pi_err, *S_pi_0_err]), header = head_str)
+    np.savetxt(fname, np.column_stack([1./B, Dx, Dy, Dx_err, Dy_err]), header = head_str)
   else:
-    if(avg_spin_direction):
-      np.savetxt(fname, np.column_stack([ratio, S_pi_pi, S_pi_0, S_pi_pi_Err, S_pi_0_err]), header = head_str)
-    else: 
-      np.savetxt(fname, np.column_stack([ratio, *S_pi_pi, *S_pi_0, *S_pi_pi_err, *S_pi_0_err]), header = head_str)
+    np.savetxt(fname, np.column_stack([ratio, Dx, Dy, Dx_err, Dy_err]), header = head_str)
 
 
 
@@ -200,18 +195,17 @@ def gather_order_parameters(X, input_file, avg_spin_direction=True, X_is_beta=Tr
 if __name__ == "__main__":
     # Script gather structure factor data for order parameter analysis 
     # Gather sweep parameter (independent variable) 
-    T = np.linspace(0.50, 8.0, 22)
+    T = np.array([1.0, 2.0]) 
     B = 1./T
     B = np.round(B, 7)
     B = np.sort(B)
 
     input_file = 'input.yml'
-    avg_spin_directions = True
     usingTemperature = True 
 
     if(usingTemperature):
-      gather_order_parameters(B, input_file, avg_spin_directions, usingTemperature) 
+      gather_order_parameters(B, input_file, usingTemperature) 
     else:
-      gather_order_parameters(J2, input_file, avg_spin_directions, usingTemperature) 
+      gather_order_parameters(J2, input_file, usingTemperature) 
 
 
